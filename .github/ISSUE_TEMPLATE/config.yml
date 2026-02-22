@@ -1,0 +1,14 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 🔒 Security Vulnerability
+    url: mailto:foss@jacobhartmann.me
+    about: Please report security vulnerabilities via email. Do not create public issues for security concerns.
+  - name: ❓ Support & Questions
+    url: https://github.com/jacob-hartmann/sevalla-mcp/blob/main/SUPPORT.md
+    about: Read our support guidelines before opening an issue. Check the README, existing issues, Sevalla API docs, and MCP documentation first.
+  - name: 📖 Sevalla API Documentation
+    url: https://api-docs.sevalla.com/v2/
+    about: Official Sevalla API documentation for understanding Sevalla-specific behavior.
+  - name: 🔌 MCP Protocol Documentation
+    url: https://modelcontextprotocol.io/
+    about: Model Context Protocol documentation for protocol-level questions.
