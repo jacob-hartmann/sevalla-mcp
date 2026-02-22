@@ -1,13 +1,104 @@
-# sevalla-mcp
+# Sevalla MCP Server
 
-[![npm version](https://img.shields.io/npm/v/sevalla-mcp.svg)](https://www.npmjs.com/package/sevalla-mcp)
 [![CI](https://github.com/jacob-hartmann/sevalla-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/jacob-hartmann/sevalla-mcp/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Coverage](https://img.shields.io/codecov/c/github/jacob-hartmann/sevalla-mcp)](https://codecov.io/gh/jacob-hartmann/sevalla-mcp)
+[![Coverage Status](https://coveralls.io/repos/github/jacob-hartmann/sevalla-mcp/badge.svg?branch=main)](https://coveralls.io/github/jacob-hartmann/sevalla-mcp?branch=main)
+[![CodeQL](https://github.com/jacob-hartmann/sevalla-mcp/actions/workflows/codeql.yml/badge.svg)](https://github.com/jacob-hartmann/sevalla-mcp/actions/workflows/codeql.yml)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/jacob-hartmann/sevalla-mcp/badge)](https://securityscorecards.dev/viewer/?uri=github.com/jacob-hartmann/sevalla-mcp)
+[![npm version](https://img.shields.io/npm/v/sevalla-mcp)](https://www.npmjs.com/package/sevalla-mcp)
+[![npm downloads](https://img.shields.io/npm/dm/sevalla-mcp)](https://www.npmjs.com/package/sevalla-mcp)
+[![License](https://img.shields.io/github/license/jacob-hartmann/sevalla-mcp)](LICENSE)
+[![Node](https://img.shields.io/badge/node-%3E%3D22-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
 
 A [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server for the [Sevalla](https://sevalla.com) cloud hosting platform.
 
 Manage your applications, databases, static sites, deployments, pipelines, and more -- all from your AI assistant.
+
+## Quick Start
+
+### Prerequisites
+
+- Node.js v22 or higher
+- A Sevalla account with API access
+- A Sevalla API key
+
+### Step 1: Get a Sevalla API Key
+
+1. Log in to your [Sevalla](https://sevalla.com) account
+2. Navigate to your API key settings
+3. Create or copy your API key
+
+### Step 2: Configure Your MCP Client
+
+Choose the setup that matches your MCP client:
+
+#### Claude Desktop (Recommended)
+
+Add to your `claude_desktop_config.json`:
+
+**macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
+**Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
+
+```json
+{
+  "mcpServers": {
+    "sevalla": {
+      "command": "npx",
+      "args": ["-y", "sevalla-mcp"],
+      "env": {
+        "SEVALLA_API_KEY": "your-api-key"
+      }
+    }
+  }
+}
+```
+
+#### Claude Code (CLI)
+
+Add to your Claude Code MCP settings (`~/.claude/mcp.json` or project-level):
+
+```json
+{
+  "mcpServers": {
+    "sevalla": {
+      "command": "npx",
+      "args": ["-y", "sevalla-mcp"],
+      "env": {
+        "SEVALLA_API_KEY": "your-api-key"
+      }
+    }
+  }
+}
+```
+
+#### Cursor
+
+In Cursor settings, add an MCP server:
+
+```json
+{
+  "mcpServers": {
+    "sevalla": {
+      "command": "npx",
+      "args": ["-y", "sevalla-mcp"],
+      "env": {
+        "SEVALLA_API_KEY": "your-api-key"
+      }
+    }
+  }
+}
+```
+
+## Configuration Reference
+
+### Environment Variables
+
+| Variable             | Required | Default     | Description                            |
+| -------------------- | -------- | ----------- | -------------------------------------- |
+| `SEVALLA_API_KEY`    | Yes      | -           | Your Sevalla API key                   |
+| `SEVALLA_COMPANY_ID` | No       | -           | Default company ID for list operations |
+| `MCP_TRANSPORT`      | No       | `stdio`     | Transport mode: `stdio` or `http`      |
+| `MCP_SERVER_HOST`    | No       | `127.0.0.1` | Host to bind the HTTP server to        |
+| `MCP_SERVER_PORT`    | No       | `3000`      | Port for the HTTP server               |
 
 ## Features
 
@@ -18,69 +109,15 @@ Manage your applications, databases, static sites, deployments, pipelines, and m
 - **Security hardened**: helmet, rate limiting, CORS, cache control (HTTP mode)
 - **Session management**: LRU-based session cache with idle timeout (HTTP mode)
 
-## Quick Start
+### Tools
 
-### Using npx (no install required)
-
-```bash
-SEVALLA_API_KEY=your_key_here npx sevalla-mcp
-```
-
-### Claude Desktop
-
-Add to your `claude_desktop_config.json`:
-
-```json
-{
-  "mcpServers": {
-    "sevalla": {
-      "command": "npx",
-      "args": ["-y", "sevalla-mcp"],
-      "env": {
-        "SEVALLA_API_KEY": "your_api_key_here"
-      }
-    }
-  }
-}
-```
-
-### Cursor
-
-Add to your Cursor MCP settings:
-
-```json
-{
-  "mcpServers": {
-    "sevalla": {
-      "command": "npx",
-      "args": ["-y", "sevalla-mcp"],
-      "env": {
-        "SEVALLA_API_KEY": "your_api_key_here"
-      }
-    }
-  }
-}
-```
-
-## Environment Variables
-
-| Variable             | Required | Default     | Description                            |
-| -------------------- | -------- | ----------- | -------------------------------------- |
-| `SEVALLA_API_KEY`    | Yes      | --          | Your Sevalla API key                   |
-| `SEVALLA_COMPANY_ID` | No       | --          | Default company ID for list operations |
-| `MCP_TRANSPORT`      | No       | `stdio`     | Transport mode: `stdio` or `http`      |
-| `MCP_SERVER_HOST`    | No       | `127.0.0.1` | Host to bind the HTTP server to        |
-| `MCP_SERVER_PORT`    | No       | `3000`      | Port for the HTTP server               |
-
-## Available Tools
-
-### Validate
+#### Validate
 
 | Tool               | Description                                         | Read-only |
 | ------------------ | --------------------------------------------------- | --------- |
 | `sevalla.validate` | Validate the Sevalla API key and check connectivity | Yes       |
 
-### Applications
+#### Applications
 
 | Tool                           | Description                                       | Read-only |
 | ------------------------------ | ------------------------------------------------- | --------- |
@@ -90,7 +127,7 @@ Add to your Cursor MCP settings:
 | `sevalla.applications.delete`  | Permanently delete an application                 | No        |
 | `sevalla.applications.promote` | Promote an application from staging to production | No        |
 
-### Databases
+#### Databases
 
 | Tool                       | Description                                 | Read-only |
 | -------------------------- | ------------------------------------------- | --------- |
@@ -100,14 +137,14 @@ Add to your Cursor MCP settings:
 | `sevalla.databases.update` | Update an existing database's configuration | No        |
 | `sevalla.databases.delete` | Permanently delete a database               | No        |
 
-### Deployments
+#### Deployments
 
 | Tool                        | Description                                 | Read-only |
 | --------------------------- | ------------------------------------------- | --------- |
 | `sevalla.deployments.get`   | Get details of a specific deployment        | Yes       |
 | `sevalla.deployments.start` | Trigger a new deployment for an application | No        |
 
-### Static Sites
+#### Static Sites
 
 | Tool                                  | Description                                      | Read-only |
 | ------------------------------------- | ------------------------------------------------ | --------- |
@@ -118,14 +155,14 @@ Add to your Cursor MCP settings:
 | `sevalla.static-sites.deploy`         | Trigger a new deployment for a static site       | No        |
 | `sevalla.static-sites.get-deployment` | Get details of a specific static site deployment | Yes       |
 
-### Processes
+#### Processes
 
 | Tool                       | Description                                   | Read-only |
 | -------------------------- | --------------------------------------------- | --------- |
 | `sevalla.processes.get`    | Get details of a specific application process | Yes       |
 | `sevalla.processes.update` | Update an application process configuration   | No        |
 
-### Networking
+#### Networking
 
 | Tool                                            | Description                                                     | Read-only |
 | ----------------------------------------------- | --------------------------------------------------------------- | --------- |
@@ -134,21 +171,21 @@ Add to your Cursor MCP settings:
 | `sevalla.networking.toggle-cdn`                 | Enable or disable CDN for an application                        | No        |
 | `sevalla.networking.toggle-edge-cache`          | Enable or disable edge caching for an application               | No        |
 
-### Pipelines
+#### Pipelines
 
 | Tool                                   | Description                                  | Read-only |
 | -------------------------------------- | -------------------------------------------- | --------- |
 | `sevalla.pipelines.list`               | List all deployment pipelines for a company  | Yes       |
 | `sevalla.pipelines.create-preview-app` | Create a preview application from a pipeline | No        |
 
-### Company
+#### Company
 
 | Tool                    | Description                              | Read-only |
 | ----------------------- | ---------------------------------------- | --------- |
 | `sevalla.company.users` | List all users for a company             | Yes       |
 | `sevalla.company.usage` | Get PaaS usage information for a company | Yes       |
 
-## Resources
+### Resources
 
 | Resource           | URI                            | Description                                      |
 | ------------------ | ------------------------------ | ------------------------------------------------ |
@@ -161,7 +198,7 @@ Add to your Cursor MCP settings:
 | Pipelines          | `sevalla://pipelines`          | List all deployment pipelines with stages        |
 | Company Users      | `sevalla://company/{id}/users` | List users for a specific company                |
 
-## Prompts
+### Prompts
 
 | Prompt               | Description                                      |
 | -------------------- | ------------------------------------------------ |
@@ -171,48 +208,65 @@ Add to your Cursor MCP settings:
 
 ## Development
 
-### Prerequisites
-
-- Node.js >= 22
-- pnpm
-
 ### Setup
 
 ```bash
+# Clone the repo
 git clone https://github.com/jacob-hartmann/sevalla-mcp.git
 cd sevalla-mcp
+
+# Use the Node.js version from .nvmrc
+# (macOS/Linux nvm): nvm install && nvm use
+# (Windows nvm-windows): nvm install 22 && nvm use 22
+nvm install
+nvm use
+
+# Install dependencies
 pnpm install
+
+# Copy .env.example and configure
+cp .env.example .env
+# Edit .env with your API key
 ```
 
-### Scripts
+### Running Locally
 
 ```bash
-pnpm dev              # Run in dev mode (stdio transport, auto-reload)
-pnpm dev:http         # Run in dev mode (HTTP transport, auto-reload)
-pnpm build            # Build for production
-pnpm start            # Run production build (stdio)
-pnpm start:http       # Run production build (HTTP)
-pnpm inspect          # Launch MCP Inspector
-pnpm lint             # Lint with ESLint
-pnpm lint:fix         # Lint and auto-fix
-pnpm format           # Format with Prettier
-pnpm format:check     # Check formatting
-pnpm typecheck        # TypeScript type checking
-pnpm test             # Run tests
-pnpm test:watch       # Run tests in watch mode
-pnpm test:coverage    # Run tests with coverage
-pnpm check            # Run all checks (typecheck + lint + format + test)
+# Development mode (auto-reload)
+pnpm dev
+
+# Production build
+pnpm build
+
+# Production run
+pnpm start
 ```
 
-### HTTP Transport Mode
+### Debugging
 
-To run in HTTP mode:
+You can use the [MCP Inspector](https://github.com/modelcontextprotocol/inspector) to debug the server:
 
 ```bash
-MCP_TRANSPORT=http pnpm dev:http
+# Run from source
+pnpm inspect
+
+# Run from built output
+pnpm inspect:dist
 ```
 
-The server will start on `http://127.0.0.1:3000/mcp` by default.
+`pnpm inspect` loads `.env` automatically via `dotenv` (see `.env.example`).
+
+## Contributing
+
+Contributions are welcome! Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines on how to contribute to this project.
+
+## Security
+
+See [SECURITY.md](./SECURITY.md) for security policy and reporting vulnerabilities.
+
+## Support
+
+This is a community project provided "as is" with **no guaranteed support**. See [SUPPORT.md](./SUPPORT.md) for details.
 
 ## License
 
