@@ -45,6 +45,13 @@ describe("Company Tools", () => {
       expect(result).toHaveProperty("isError", true);
     });
 
+    it("should return error when no company ID is available", async () => {
+      mockGetCompanyId.mockReturnValue(undefined);
+      mockClientSuccess(mock, ctx);
+      const result = await ctx.callTool("sevalla.company.users", {});
+      expect(result).toHaveProperty("isError", true);
+    });
+
     it("should handle API error", async () => {
       mockClientSuccess(mock, ctx);
       mockRequestError(ctx, "SERVER_ERROR", "fail");
