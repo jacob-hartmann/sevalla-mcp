@@ -71,6 +71,16 @@ describe("Resource Tools", () => {
       expect(result).toHaveProperty("isError", true);
     });
 
+    it("should handle API error", async () => {
+      mockClientSuccess(mock, ctx);
+      mockRequestError(ctx, "SERVER_ERROR", "fail");
+      const result = await ctx.callTool(
+        "sevalla.resources.database-resource-types",
+        {}
+      );
+      expect(result).toHaveProperty("isError", true);
+    });
+
     it("should return success with correct path", async () => {
       mockClientSuccess(mock, ctx);
       mockRequestSuccess(ctx, { resource_types: [] });
@@ -91,6 +101,16 @@ describe("Resource Tools", () => {
   describe("sevalla.resources.process-resource-types", () => {
     it("should handle auth failure", async () => {
       mockClientAuthFailure(mock);
+      const result = await ctx.callTool(
+        "sevalla.resources.process-resource-types",
+        {}
+      );
+      expect(result).toHaveProperty("isError", true);
+    });
+
+    it("should handle API error", async () => {
+      mockClientSuccess(mock, ctx);
+      mockRequestError(ctx, "SERVER_ERROR", "fail");
       const result = await ctx.callTool(
         "sevalla.resources.process-resource-types",
         {}

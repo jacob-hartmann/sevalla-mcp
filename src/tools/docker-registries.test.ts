@@ -16,6 +16,7 @@ import {
   mockClientSuccess,
   mockClientAuthFailure,
   mockRequestSuccess,
+  mockRequestError,
 } from "./__test-helpers__/tool-test-utils.js";
 
 describe("Docker Registry Tools", () => {
@@ -44,6 +45,13 @@ describe("Docker Registry Tools", () => {
       expect(result).toHaveProperty("isError", true);
     });
 
+    it("should handle API error", async () => {
+      mockClientSuccess(mock, ctx);
+      mockRequestError(ctx, "SERVER_ERROR", "fail");
+      const result = await ctx.callTool("sevalla.docker-registries.list", {});
+      expect(result).toHaveProperty("isError", true);
+    });
+
     it("should return success with correct path", async () => {
       mockClientSuccess(mock, ctx);
       mockRequestSuccess(ctx, { registries: [] });
@@ -62,6 +70,15 @@ describe("Docker Registry Tools", () => {
   describe("sevalla.docker-registries.get", () => {
     it("should handle auth failure", async () => {
       mockClientAuthFailure(mock);
+      const result = await ctx.callTool("sevalla.docker-registries.get", {
+        id: "reg-uuid-1",
+      });
+      expect(result).toHaveProperty("isError", true);
+    });
+
+    it("should handle API error", async () => {
+      mockClientSuccess(mock, ctx);
+      mockRequestError(ctx, "NOT_FOUND", "not found");
       const result = await ctx.callTool("sevalla.docker-registries.get", {
         id: "reg-uuid-1",
       });
@@ -87,6 +104,18 @@ describe("Docker Registry Tools", () => {
   describe("sevalla.docker-registries.create", () => {
     it("should handle auth failure", async () => {
       mockClientAuthFailure(mock);
+      const result = await ctx.callTool("sevalla.docker-registries.create", {
+        display_name: "My Registry",
+        registry_url: "https://registry.example.com",
+        username: "user",
+        password: "pass",
+      });
+      expect(result).toHaveProperty("isError", true);
+    });
+
+    it("should handle API error", async () => {
+      mockClientSuccess(mock, ctx);
+      mockRequestError(ctx, "SERVER_ERROR", "fail");
       const result = await ctx.callTool("sevalla.docker-registries.create", {
         display_name: "My Registry",
         registry_url: "https://registry.example.com",
@@ -129,6 +158,16 @@ describe("Docker Registry Tools", () => {
       expect(result).toHaveProperty("isError", true);
     });
 
+    it("should handle API error", async () => {
+      mockClientSuccess(mock, ctx);
+      mockRequestError(ctx, "SERVER_ERROR", "fail");
+      const result = await ctx.callTool("sevalla.docker-registries.update", {
+        id: "reg-uuid-1",
+        display_name: "Updated",
+      });
+      expect(result).toHaveProperty("isError", true);
+    });
+
     it("should send PATCH with body", async () => {
       mockClientSuccess(mock, ctx);
       mockRequestSuccess(ctx, { id: "reg-uuid-1" });
@@ -150,6 +189,15 @@ describe("Docker Registry Tools", () => {
   describe("sevalla.docker-registries.delete", () => {
     it("should handle auth failure", async () => {
       mockClientAuthFailure(mock);
+      const result = await ctx.callTool("sevalla.docker-registries.delete", {
+        id: "reg-uuid-1",
+      });
+      expect(result).toHaveProperty("isError", true);
+    });
+
+    it("should handle API error", async () => {
+      mockClientSuccess(mock, ctx);
+      mockRequestError(ctx, "NOT_FOUND", "not found");
       const result = await ctx.callTool("sevalla.docker-registries.delete", {
         id: "reg-uuid-1",
       });

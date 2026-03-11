@@ -90,6 +90,16 @@ describe("Application Domain Tools", () => {
       expect(result).toHaveProperty("isError", true);
     });
 
+    it("should handle API error", async () => {
+      mockClientSuccess(mock, ctx);
+      mockRequestError(ctx, "SERVER_ERROR", "fail");
+      const result = await ctx.callTool(
+        "sevalla.applications.domains.add",
+        { app_id: "app-uuid-1", hostname: "example.com" }
+      );
+      expect(result).toHaveProperty("isError", true);
+    });
+
     it("should send POST with body", async () => {
       mockClientSuccess(mock, ctx);
       mockRequestSuccess(ctx, { id: "domain-uuid-1" });
@@ -115,6 +125,16 @@ describe("Application Domain Tools", () => {
   describe("sevalla.applications.domains.delete", () => {
     it("should handle auth failure", async () => {
       mockClientAuthFailure(mock);
+      const result = await ctx.callTool(
+        "sevalla.applications.domains.delete",
+        { app_id: "app-uuid-1", domain_id: "domain-uuid-1" }
+      );
+      expect(result).toHaveProperty("isError", true);
+    });
+
+    it("should handle API error", async () => {
+      mockClientSuccess(mock, ctx);
+      mockRequestError(ctx, "NOT_FOUND", "not found");
       const result = await ctx.callTool(
         "sevalla.applications.domains.delete",
         { app_id: "app-uuid-1", domain_id: "domain-uuid-1" }
@@ -153,6 +173,16 @@ describe("Application Domain Tools", () => {
       expect(result).toHaveProperty("isError", true);
     });
 
+    it("should handle API error", async () => {
+      mockClientSuccess(mock, ctx);
+      mockRequestError(ctx, "SERVER_ERROR", "fail");
+      const result = await ctx.callTool(
+        "sevalla.applications.domains.set-primary",
+        { app_id: "app-uuid-1", domain_id: "domain-uuid-1" }
+      );
+      expect(result).toHaveProperty("isError", true);
+    });
+
     it("should send POST to correct path", async () => {
       mockClientSuccess(mock, ctx);
       mockRequestSuccess(ctx, { primary: true });
@@ -177,6 +207,16 @@ describe("Application Domain Tools", () => {
   describe("sevalla.applications.domains.refresh-status", () => {
     it("should handle auth failure", async () => {
       mockClientAuthFailure(mock);
+      const result = await ctx.callTool(
+        "sevalla.applications.domains.refresh-status",
+        { app_id: "app-uuid-1", domain_id: "domain-uuid-1" }
+      );
+      expect(result).toHaveProperty("isError", true);
+    });
+
+    it("should handle API error", async () => {
+      mockClientSuccess(mock, ctx);
+      mockRequestError(ctx, "SERVER_ERROR", "fail");
       const result = await ctx.callTool(
         "sevalla.applications.domains.refresh-status",
         { app_id: "app-uuid-1", domain_id: "domain-uuid-1" }

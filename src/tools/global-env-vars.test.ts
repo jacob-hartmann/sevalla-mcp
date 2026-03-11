@@ -16,6 +16,7 @@ import {
   mockClientSuccess,
   mockClientAuthFailure,
   mockRequestSuccess,
+  mockRequestError,
 } from "./__test-helpers__/tool-test-utils.js";
 
 describe("Global Environment Variable Tools", () => {
@@ -43,6 +44,13 @@ describe("Global Environment Variable Tools", () => {
       expect(result).toHaveProperty("isError", true);
     });
 
+    it("should handle API error", async () => {
+      mockClientSuccess(mock, ctx);
+      mockRequestError(ctx, "SERVER_ERROR", "fail");
+      const result = await ctx.callTool("sevalla.global-env-vars.list", {});
+      expect(result).toHaveProperty("isError", true);
+    });
+
     it("should return success with correct path", async () => {
       mockClientSuccess(mock, ctx);
       mockRequestSuccess(ctx, { variables: [] });
@@ -61,6 +69,16 @@ describe("Global Environment Variable Tools", () => {
   describe("sevalla.global-env-vars.create", () => {
     it("should handle auth failure", async () => {
       mockClientAuthFailure(mock);
+      const result = await ctx.callTool("sevalla.global-env-vars.create", {
+        key: "NODE_ENV",
+        value: "production",
+      });
+      expect(result).toHaveProperty("isError", true);
+    });
+
+    it("should handle API error", async () => {
+      mockClientSuccess(mock, ctx);
+      mockRequestError(ctx, "SERVER_ERROR", "fail");
       const result = await ctx.callTool("sevalla.global-env-vars.create", {
         key: "NODE_ENV",
         value: "production",
@@ -100,6 +118,16 @@ describe("Global Environment Variable Tools", () => {
       expect(result).toHaveProperty("isError", true);
     });
 
+    it("should handle API error", async () => {
+      mockClientSuccess(mock, ctx);
+      mockRequestError(ctx, "NOT_FOUND", "not found");
+      const result = await ctx.callTool("sevalla.global-env-vars.update", {
+        id: "gev-uuid-1",
+        value: "staging",
+      });
+      expect(result).toHaveProperty("isError", true);
+    });
+
     it("should send PATCH with body", async () => {
       mockClientSuccess(mock, ctx);
       mockRequestSuccess(ctx, { id: "gev-uuid-1" });
@@ -121,6 +149,15 @@ describe("Global Environment Variable Tools", () => {
   describe("sevalla.global-env-vars.delete", () => {
     it("should handle auth failure", async () => {
       mockClientAuthFailure(mock);
+      const result = await ctx.callTool("sevalla.global-env-vars.delete", {
+        id: "gev-uuid-1",
+      });
+      expect(result).toHaveProperty("isError", true);
+    });
+
+    it("should handle API error", async () => {
+      mockClientSuccess(mock, ctx);
+      mockRequestError(ctx, "NOT_FOUND", "not found");
       const result = await ctx.callTool("sevalla.global-env-vars.delete", {
         id: "gev-uuid-1",
       });

@@ -85,6 +85,16 @@ describe("Environment Variable Tools", () => {
       expect(result).toHaveProperty("isError", true);
     });
 
+    it("should handle API error", async () => {
+      mockClientSuccess(mock, ctx);
+      mockRequestError(ctx, "SERVER_ERROR", "fail");
+      const result = await ctx.callTool(
+        "sevalla.applications.env-vars.create",
+        { app_id: "app-uuid-1", key: "NODE_ENV", value: "production" }
+      );
+      expect(result).toHaveProperty("isError", true);
+    });
+
     it("should send POST with body", async () => {
       mockClientSuccess(mock, ctx);
       mockRequestSuccess(ctx, { id: "env-var-uuid-1" });
@@ -117,6 +127,16 @@ describe("Environment Variable Tools", () => {
       expect(result).toHaveProperty("isError", true);
     });
 
+    it("should handle API error", async () => {
+      mockClientSuccess(mock, ctx);
+      mockRequestError(ctx, "NOT_FOUND", "not found");
+      const result = await ctx.callTool(
+        "sevalla.applications.env-vars.update",
+        { app_id: "app-uuid-1", env_var_id: "env-var-uuid-1", value: "staging" }
+      );
+      expect(result).toHaveProperty("isError", true);
+    });
+
     it("should send PATCH with body", async () => {
       mockClientSuccess(mock, ctx);
       mockRequestSuccess(ctx, { id: "env-var-uuid-1", value: "staging" });
@@ -142,6 +162,16 @@ describe("Environment Variable Tools", () => {
   describe("sevalla.applications.env-vars.delete", () => {
     it("should handle auth failure", async () => {
       mockClientAuthFailure(mock);
+      const result = await ctx.callTool(
+        "sevalla.applications.env-vars.delete",
+        { app_id: "app-uuid-1", env_var_id: "env-var-uuid-1" }
+      );
+      expect(result).toHaveProperty("isError", true);
+    });
+
+    it("should handle API error", async () => {
+      mockClientSuccess(mock, ctx);
+      mockRequestError(ctx, "NOT_FOUND", "not found");
       const result = await ctx.callTool(
         "sevalla.applications.env-vars.delete",
         { app_id: "app-uuid-1", env_var_id: "env-var-uuid-1" }

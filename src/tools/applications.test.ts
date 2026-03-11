@@ -190,6 +190,21 @@ describe("Application Tools", () => {
         })
       );
     });
+
+    it("should use env company ID when not provided", async () => {
+      mockClientSuccess(mock, ctx);
+      mockRequestSuccess(ctx, { id: "app-uuid-2" });
+      await ctx.callTool("sevalla.applications.create", {
+        display_name: "New App",
+        repository: "https://github.com/org/repo",
+        branch: "main",
+      });
+      expect(ctx.mockClient.request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          body: expect.objectContaining({ company: "company-uuid-1" }),
+        })
+      );
+    });
   });
 
   // -------------------------------------------------------------------------
