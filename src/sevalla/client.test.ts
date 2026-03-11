@@ -6,7 +6,7 @@ describe("SevallaClient", () => {
   const mockConfig: SevallaConfig = {
     apiKey: "test-api-key",
     companyId: undefined,
-    baseUrl: "https://api.sevalla.com/v2",
+    baseUrl: "https://api.sevalla.com/v3",
   };
 
   let client: SevallaClient;
@@ -24,7 +24,7 @@ describe("SevallaClient", () => {
     it("should strip trailing slashes from base URL", () => {
       const c = new SevallaClient({
         ...mockConfig,
-        baseUrl: "https://api.sevalla.com/v2///",
+        baseUrl: "https://api.sevalla.com/v3///",
       });
       // Client should be created without error
       expect(c).toBeDefined();
@@ -49,7 +49,7 @@ describe("SevallaClient", () => {
       }
 
       expect(fetch).toHaveBeenCalledWith(
-        "https://api.sevalla.com/v2/applications",
+        "https://api.sevalla.com/v3/applications",
         expect.objectContaining({
           method: "GET",
           headers: expect.objectContaining({
@@ -75,7 +75,7 @@ describe("SevallaClient", () => {
       });
 
       expect(fetch).toHaveBeenCalledWith(
-        "https://api.sevalla.com/v2/applications",
+        "https://api.sevalla.com/v3/applications",
         expect.objectContaining({
           method: "POST",
           body: JSON.stringify({ name: "My App" }),
@@ -102,7 +102,7 @@ describe("SevallaClient", () => {
       });
 
       expect(fetch).toHaveBeenCalledWith(
-        "https://api.sevalla.com/v2/applications/app-1",
+        "https://api.sevalla.com/v3/applications/app-1",
         expect.objectContaining({
           method: "PUT",
           body: JSON.stringify({ name: "Updated App" }),
@@ -124,7 +124,7 @@ describe("SevallaClient", () => {
       });
 
       expect(fetch).toHaveBeenCalledWith(
-        "https://api.sevalla.com/v2/applications/app-1",
+        "https://api.sevalla.com/v3/applications/app-1",
         expect.objectContaining({
           method: "DELETE",
         })
@@ -268,7 +268,7 @@ describe("SevallaClient", () => {
       });
 
       expect(fetch).toHaveBeenCalledWith(
-        "https://api.sevalla.com/v2/applications?company_id=comp-1",
+        "https://api.sevalla.com/v3/applications?company_id=comp-1",
         expect.any(Object)
       );
     });
@@ -285,7 +285,7 @@ describe("SevallaClient", () => {
       });
 
       expect(fetch).toHaveBeenCalledWith(
-        "https://api.sevalla.com/v2/applications",
+        "https://api.sevalla.com/v3/applications",
         expect.objectContaining({
           method: "POST",
           body: JSON.stringify({ name: "My App" }),

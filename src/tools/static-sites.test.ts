@@ -37,6 +37,8 @@ describe("Static Site Tools", () => {
     expect(ctx.tools.has("sevalla.static-sites.delete")).toBe(true);
     expect(ctx.tools.has("sevalla.static-sites.deploy")).toBe(true);
     expect(ctx.tools.has("sevalla.static-sites.get-deployment")).toBe(true);
+    expect(ctx.tools.has("sevalla.static-sites.create")).toBe(true);
+    expect(ctx.tools.has("sevalla.static-sites.purge-cache")).toBe(true);
   });
 
   // ---------------------------------------------------------------------------
@@ -177,7 +179,7 @@ describe("Static Site Tools", () => {
       expect(ctx.mockClient.request).toHaveBeenCalledWith(
         expect.objectContaining({
           path: "/static-sites/site-uuid-1",
-          method: "PUT",
+          method: "PATCH",
           body: { display_name: "Updated Site" },
         })
       );
@@ -253,9 +255,8 @@ describe("Static Site Tools", () => {
       expect(result).not.toHaveProperty("isError");
       expect(ctx.mockClient.request).toHaveBeenCalledWith(
         expect.objectContaining({
-          path: "/static-sites/deployments",
+          path: "/static-sites/site-uuid-1/deployments",
           method: "POST",
-          body: { site_id: "site-uuid-1" },
         })
       );
     });
@@ -270,9 +271,9 @@ describe("Static Site Tools", () => {
       expect(result).not.toHaveProperty("isError");
       expect(ctx.mockClient.request).toHaveBeenCalledWith(
         expect.objectContaining({
-          path: "/static-sites/deployments",
+          path: "/static-sites/site-uuid-1/deployments",
           method: "POST",
-          body: { site_id: "site-uuid-1", branch: "main" },
+          body: { branch: "main" },
         })
       );
     });
@@ -286,7 +287,8 @@ describe("Static Site Tools", () => {
     it("should handle auth failure", async () => {
       mockClientAuthFailure(mock);
       const result = await ctx.callTool("sevalla.static-sites.get-deployment", {
-        id: "deploy-uuid-1",
+        site_id: "site-uuid-1",
+        deployment_id: "deploy-uuid-1",
       });
       expect(result).toHaveProperty("isError", true);
     });
@@ -295,7 +297,8 @@ describe("Static Site Tools", () => {
       mockClientSuccess(mock, ctx);
       mockRequestError(ctx, "NOT_FOUND", "not found");
       const result = await ctx.callTool("sevalla.static-sites.get-deployment", {
-        id: "deploy-uuid-1",
+        site_id: "site-uuid-1",
+        deployment_id: "deploy-uuid-1",
       });
       expect(result).toHaveProperty("isError", true);
     });
@@ -304,13 +307,102 @@ describe("Static Site Tools", () => {
       mockClientSuccess(mock, ctx);
       mockRequestSuccess(ctx, { id: "deploy-uuid-1", status: "success" });
       const result = await ctx.callTool("sevalla.static-sites.get-deployment", {
-        id: "deploy-uuid-1",
+        site_id: "site-uuid-1",
+        deployment_id: "deploy-uuid-1",
       });
       expect(result).not.toHaveProperty("isError");
       expect(ctx.mockClient.request).toHaveBeenCalledWith(
         expect.objectContaining({
-          path: "/static-sites/deployments/deploy-uuid-1",
+          path: "/static-sites/site-uuid-1/deployments/deploy-uuid-1",
           method: "GET",
+        })
+      );
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // sevalla.static-sites.create
+  // ---------------------------------------------------------------------------
+
+  describe("sevalla.static-sites.create", () => {
+    it("should handle auth failure", async () => {
+      mockClientAuthFailure(mock);
+      const result = await ctx.callTool("sevalla.static-sites.create", {
+        display_name: "Test Site",
+        repository: "https://github.com/test/repo",
+        branch: "main",
+      });
+      expect(result).toHaveProperty("isError", true);
+    });
+
+    it("should handle API error", async () => {
+      mockClientSuccess(mock, ctx);
+      mockRequestError(ctx, "VALIDATION_ERROR", "invalid");
+      const result = await ctx.callTool("sevalla.static-sites.create", {
+        display_name: "Test Site",
+        repository: "https://github.com/test/repo",
+        branch: "main",
+      });
+      expect(result).toHaveProperty("isError", true);
+    });
+
+    it("should return success with required fields", async () => {
+      mockClientSuccess(mock, ctx);
+      mockRequestSuccess(ctx, { id: "new-site-uuid" });
+      const result = await ctx.callTool("sevalla.static-sites.create", {
+        display_name: "Test Site",
+        repository: "https://github.com/test/repo",
+        branch: "main",
+      });
+      expect(result).not.toHaveProperty("isError");
+      expect(ctx.mockClient.request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          path: "/static-sites",
+          method: "POST",
+          body: expect.objectContaining({
+            company: "default-company-id",
+            display_name: "Test Site",
+            repository: "https://github.com/test/repo",
+            branch: "main",
+          }),
+        })
+      );
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // sevalla.static-sites.purge-cache
+  // ---------------------------------------------------------------------------
+
+  describe("sevalla.static-sites.purge-cache", () => {
+    it("should handle auth failure", async () => {
+      mockClientAuthFailure(mock);
+      const result = await ctx.callTool("sevalla.static-sites.purge-cache", {
+        id: "site-uuid-1",
+      });
+      expect(result).toHaveProperty("isError", true);
+    });
+
+    it("should handle API error", async () => {
+      mockClientSuccess(mock, ctx);
+      mockRequestError(ctx, "SERVER_ERROR", "fail");
+      const result = await ctx.callTool("sevalla.static-sites.purge-cache", {
+        id: "site-uuid-1",
+      });
+      expect(result).toHaveProperty("isError", true);
+    });
+
+    it("should return success", async () => {
+      mockClientSuccess(mock, ctx);
+      mockRequestSuccess(ctx, { purged: true });
+      const result = await ctx.callTool("sevalla.static-sites.purge-cache", {
+        id: "site-uuid-1",
+      });
+      expect(result).not.toHaveProperty("isError");
+      expect(ctx.mockClient.request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          path: "/static-sites/site-uuid-1/purge-edge-cache",
+          method: "POST",
         })
       );
     });

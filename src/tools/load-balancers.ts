@@ -1,7 +1,7 @@
 /**
- * Sevalla Pipeline Tools
+ * Sevalla Load Balancer Tools
  *
- * Tools for managing Sevalla deployment pipelines.
+ * Tools for managing Sevalla load balancers and their destinations.
  */
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -16,13 +16,13 @@ import {
   sevallaOutputSchema,
 } from "./utils.js";
 
-export function registerPipelineTools(server: McpServer): void {
-  // sevalla.pipelines.list
+export function registerLoadBalancerTools(server: McpServer): void {
+  // sevalla.load-balancers.list
   server.registerTool(
-    "sevalla.pipelines.list",
+    "sevalla.load-balancers.list",
     {
-      title: "List Pipelines",
-      description: "List all deployment pipelines for a company.",
+      title: "List Load Balancers",
+      description: "List all load balancers for a company.",
       inputSchema: z.object({
         company: z
           .uuid()
@@ -59,24 +59,24 @@ export function registerPipelineTools(server: McpServer): void {
       });
 
       const result = await clientResult.client.request<unknown>({
-        path: "/pipelines",
+        path: "/load-balancers",
         method: "GET",
         params: params as Record<string, string>,
       });
 
-      if (!result.success) return formatError(result.error, "pipeline");
+      if (!result.success) return formatError(result.error, "load balancer");
       return formatSuccess(result.data);
     }
   );
 
-  // sevalla.pipelines.get
+  // sevalla.load-balancers.get
   server.registerTool(
-    "sevalla.pipelines.get",
+    "sevalla.load-balancers.get",
     {
-      title: "Get Pipeline",
-      description: "Get details of a specific pipeline.",
+      title: "Get Load Balancer",
+      description: "Get details of a specific load balancer.",
       inputSchema: z.object({
-        id: z.uuid().describe("Pipeline UUID"),
+        id: z.uuid().describe("Load balancer UUID"),
       }),
       outputSchema: sevallaOutputSchema,
       annotations: {
@@ -90,27 +90,33 @@ export function registerPipelineTools(server: McpServer): void {
       if (!clientResult.success) return formatAuthError(clientResult.error);
 
       const result = await clientResult.client.request<unknown>({
-        path: `/pipelines/${args.id}`,
+        path: `/load-balancers/${args.id}`,
         method: "GET",
       });
 
-      if (!result.success) return formatError(result.error, "pipeline");
+      if (!result.success) return formatError(result.error, "load balancer");
       return formatSuccess(result.data);
     }
   );
 
-  // sevalla.pipelines.create
+  // sevalla.load-balancers.create
   server.registerTool(
-    "sevalla.pipelines.create",
+    "sevalla.load-balancers.create",
     {
-      title: "Create Pipeline",
-      description: "Create a new deployment pipeline.",
+      title: "Create Load Balancer",
+      description: "Create a new load balancer.",
       inputSchema: z.object({
         company: z
           .uuid()
           .optional()
           .describe("Company UUID (defaults to SEVALLA_COMPANY_ID env var)"),
-        name: z.string().describe("Pipeline name"),
+        display_name: z
+          .string()
+          .describe("Display name for the load balancer"),
+        location: z
+          .string()
+          .optional()
+          .describe("Data center location identifier"),
       }),
       outputSchema: sevallaOutputSchema,
       annotations: { openWorldHint: true },
@@ -122,29 +128,33 @@ export function registerPipelineTools(server: McpServer): void {
       const companyId = args.company ?? getCompanyId();
       const body = buildParams({
         company: companyId,
-        name: args.name,
+        display_name: args.display_name,
+        location: args.location,
       });
 
       const result = await clientResult.client.request<unknown>({
-        path: "/pipelines",
+        path: "/load-balancers",
         method: "POST",
         body,
       });
 
-      if (!result.success) return formatError(result.error, "pipeline");
+      if (!result.success) return formatError(result.error, "load balancer");
       return formatSuccess(result.data);
     }
   );
 
-  // sevalla.pipelines.update
+  // sevalla.load-balancers.update
   server.registerTool(
-    "sevalla.pipelines.update",
+    "sevalla.load-balancers.update",
     {
-      title: "Update Pipeline",
-      description: "Update an existing pipeline.",
+      title: "Update Load Balancer",
+      description: "Update an existing load balancer's configuration.",
       inputSchema: z.object({
-        id: z.uuid().describe("Pipeline UUID"),
-        name: z.string().optional().describe("New pipeline name"),
+        id: z.uuid().describe("Load balancer UUID"),
+        display_name: z
+          .string()
+          .optional()
+          .describe("New display name for the load balancer"),
       }),
       outputSchema: sevallaOutputSchema,
       annotations: { openWorldHint: true },
@@ -154,29 +164,29 @@ export function registerPipelineTools(server: McpServer): void {
       if (!clientResult.success) return formatAuthError(clientResult.error);
 
       const body = buildParams({
-        name: args.name,
+        display_name: args.display_name,
       });
 
       const result = await clientResult.client.request<unknown>({
-        path: `/pipelines/${args.id}`,
+        path: `/load-balancers/${args.id}`,
         method: "PATCH",
         body,
       });
 
-      if (!result.success) return formatError(result.error, "pipeline");
+      if (!result.success) return formatError(result.error, "load balancer");
       return formatSuccess(result.data);
     }
   );
 
-  // sevalla.pipelines.delete
+  // sevalla.load-balancers.delete
   server.registerTool(
-    "sevalla.pipelines.delete",
+    "sevalla.load-balancers.delete",
     {
-      title: "Delete Pipeline",
+      title: "Delete Load Balancer",
       description:
-        "Permanently delete a pipeline. This action cannot be undone.",
+        "Permanently delete a load balancer. This action cannot be undone.",
       inputSchema: z.object({
-        id: z.uuid().describe("Pipeline UUID"),
+        id: z.uuid().describe("Load balancer UUID"),
       }),
       outputSchema: sevallaOutputSchema,
       annotations: {
@@ -190,50 +200,55 @@ export function registerPipelineTools(server: McpServer): void {
       if (!clientResult.success) return formatAuthError(clientResult.error);
 
       const result = await clientResult.client.request<unknown>({
-        path: `/pipelines/${args.id}`,
+        path: `/load-balancers/${args.id}`,
         method: "DELETE",
       });
 
-      if (!result.success) return formatError(result.error, "pipeline");
+      if (!result.success) return formatError(result.error, "load balancer");
       return formatSuccess(result.data);
     }
   );
 
-  // sevalla.pipelines.promote
+  // sevalla.load-balancers.destinations.list
   server.registerTool(
-    "sevalla.pipelines.promote",
+    "sevalla.load-balancers.destinations.list",
     {
-      title: "Promote Pipeline",
-      description: "Promote builds between pipeline stages.",
+      title: "List Load Balancer Destinations",
+      description: "List all destinations for a load balancer.",
       inputSchema: z.object({
-        id: z.uuid().describe("Pipeline UUID"),
+        id: z.uuid().describe("Load balancer UUID"),
       }),
       outputSchema: sevallaOutputSchema,
-      annotations: { openWorldHint: true },
+      annotations: {
+        readOnlyHint: true,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
     },
     async (args, extra) => {
       const clientResult = getSevallaClient(extra);
       if (!clientResult.success) return formatAuthError(clientResult.error);
 
       const result = await clientResult.client.request<unknown>({
-        path: `/pipelines/${args.id}/promote`,
-        method: "POST",
+        path: `/load-balancers/${args.id}/destinations`,
+        method: "GET",
       });
 
-      if (!result.success) return formatError(result.error, "pipeline");
+      if (!result.success)
+        return formatError(result.error, "load balancer destination");
       return formatSuccess(result.data);
     }
   );
 
-  // sevalla.pipelines.stages.create
+  // sevalla.load-balancers.destinations.add
   server.registerTool(
-    "sevalla.pipelines.stages.create",
+    "sevalla.load-balancers.destinations.add",
     {
-      title: "Create Pipeline Stage",
-      description: "Create a new stage in a pipeline.",
+      title: "Add Load Balancer Destination",
+      description: "Add a destination to a load balancer.",
       inputSchema: z.object({
-        id: z.uuid().describe("Pipeline UUID"),
-        name: z.string().optional().describe("Stage name"),
+        id: z.uuid().describe("Load balancer UUID"),
+        target_id: z.uuid().describe("Target UUID to add as a destination"),
       }),
       outputSchema: sevallaOutputSchema,
       annotations: { openWorldHint: true },
@@ -243,29 +258,30 @@ export function registerPipelineTools(server: McpServer): void {
       if (!clientResult.success) return formatAuthError(clientResult.error);
 
       const body = buildParams({
-        name: args.name,
+        target_id: args.target_id,
       });
 
       const result = await clientResult.client.request<unknown>({
-        path: `/pipelines/${args.id}/stages`,
+        path: `/load-balancers/${args.id}/destinations`,
         method: "POST",
         body,
       });
 
-      if (!result.success) return formatError(result.error, "pipeline stage");
+      if (!result.success)
+        return formatError(result.error, "load balancer destination");
       return formatSuccess(result.data);
     }
   );
 
-  // sevalla.pipelines.stages.delete
+  // sevalla.load-balancers.destinations.remove
   server.registerTool(
-    "sevalla.pipelines.stages.delete",
+    "sevalla.load-balancers.destinations.remove",
     {
-      title: "Delete Pipeline Stage",
-      description: "Delete a stage from a pipeline.",
+      title: "Remove Load Balancer Destination",
+      description: "Remove a destination from a load balancer.",
       inputSchema: z.object({
-        id: z.uuid().describe("Pipeline UUID"),
-        stage_id: z.uuid().describe("Stage UUID"),
+        id: z.uuid().describe("Load balancer UUID"),
+        dest_id: z.uuid().describe("Destination UUID to remove"),
       }),
       outputSchema: sevallaOutputSchema,
       annotations: {
@@ -279,23 +295,26 @@ export function registerPipelineTools(server: McpServer): void {
       if (!clientResult.success) return formatAuthError(clientResult.error);
 
       const result = await clientResult.client.request<unknown>({
-        path: `/pipelines/${args.id}/stages/${args.stage_id}`,
+        path: `/load-balancers/${args.id}/destinations/${args.dest_id}`,
         method: "DELETE",
       });
 
-      if (!result.success) return formatError(result.error, "pipeline stage");
+      if (!result.success)
+        return formatError(result.error, "load balancer destination");
       return formatSuccess(result.data);
     }
   );
 
-  // sevalla.pipelines.enable-preview
+  // sevalla.load-balancers.destinations.toggle
   server.registerTool(
-    "sevalla.pipelines.enable-preview",
+    "sevalla.load-balancers.destinations.toggle",
     {
-      title: "Enable Pipeline Preview",
-      description: "Enable preview environments for a pipeline.",
+      title: "Toggle Load Balancer Destination",
+      description:
+        "Toggle a destination on or off for a load balancer.",
       inputSchema: z.object({
-        id: z.uuid().describe("Pipeline UUID"),
+        id: z.uuid().describe("Load balancer UUID"),
+        dest_id: z.uuid().describe("Destination UUID to toggle"),
       }),
       outputSchema: sevallaOutputSchema,
       annotations: { openWorldHint: true },
@@ -305,37 +324,12 @@ export function registerPipelineTools(server: McpServer): void {
       if (!clientResult.success) return formatAuthError(clientResult.error);
 
       const result = await clientResult.client.request<unknown>({
-        path: `/pipelines/${args.id}/preview/enable`,
+        path: `/load-balancers/${args.id}/destinations/${args.dest_id}/toggle`,
         method: "POST",
       });
 
-      if (!result.success) return formatError(result.error, "pipeline");
-      return formatSuccess(result.data);
-    }
-  );
-
-  // sevalla.pipelines.disable-preview
-  server.registerTool(
-    "sevalla.pipelines.disable-preview",
-    {
-      title: "Disable Pipeline Preview",
-      description: "Disable preview environments for a pipeline.",
-      inputSchema: z.object({
-        id: z.uuid().describe("Pipeline UUID"),
-      }),
-      outputSchema: sevallaOutputSchema,
-      annotations: { openWorldHint: true },
-    },
-    async (args, extra) => {
-      const clientResult = getSevallaClient(extra);
-      if (!clientResult.success) return formatAuthError(clientResult.error);
-
-      const result = await clientResult.client.request<unknown>({
-        path: `/pipelines/${args.id}/preview/disable`,
-        method: "POST",
-      });
-
-      if (!result.success) return formatError(result.error, "pipeline");
+      if (!result.success)
+        return formatError(result.error, "load balancer destination");
       return formatSuccess(result.data);
     }
   );

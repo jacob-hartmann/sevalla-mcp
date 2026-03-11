@@ -19,7 +19,7 @@ import {
 // HTTP Methods
 // ---------------------------------------------------------------------------
 
-type HttpMethod = "GET" | "POST" | "PUT" | "DELETE";
+type HttpMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
 
 interface RequestOptions {
   /** URL path relative to the base URL (e.g., "/applications") */

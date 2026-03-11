@@ -1,7 +1,7 @@
 /**
- * Sevalla Pipeline Tools
+ * Sevalla Webhook Tools
  *
- * Tools for managing Sevalla deployment pipelines.
+ * Tools for managing Sevalla webhooks and event deliveries.
  */
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -16,13 +16,13 @@ import {
   sevallaOutputSchema,
 } from "./utils.js";
 
-export function registerPipelineTools(server: McpServer): void {
-  // sevalla.pipelines.list
+export function registerWebhookTools(server: McpServer): void {
+  // sevalla.webhooks.list
   server.registerTool(
-    "sevalla.pipelines.list",
+    "sevalla.webhooks.list",
     {
-      title: "List Pipelines",
-      description: "List all deployment pipelines for a company.",
+      title: "List Webhooks",
+      description: "List all webhooks for a company.",
       inputSchema: z.object({
         company: z
           .uuid()
@@ -59,24 +59,24 @@ export function registerPipelineTools(server: McpServer): void {
       });
 
       const result = await clientResult.client.request<unknown>({
-        path: "/pipelines",
+        path: "/webhooks",
         method: "GET",
         params: params as Record<string, string>,
       });
 
-      if (!result.success) return formatError(result.error, "pipeline");
+      if (!result.success) return formatError(result.error, "webhook");
       return formatSuccess(result.data);
     }
   );
 
-  // sevalla.pipelines.get
+  // sevalla.webhooks.get
   server.registerTool(
-    "sevalla.pipelines.get",
+    "sevalla.webhooks.get",
     {
-      title: "Get Pipeline",
-      description: "Get details of a specific pipeline.",
+      title: "Get Webhook",
+      description: "Get details of a specific webhook.",
       inputSchema: z.object({
-        id: z.uuid().describe("Pipeline UUID"),
+        id: z.uuid().describe("Webhook UUID"),
       }),
       outputSchema: sevallaOutputSchema,
       annotations: {
@@ -90,27 +90,30 @@ export function registerPipelineTools(server: McpServer): void {
       if (!clientResult.success) return formatAuthError(clientResult.error);
 
       const result = await clientResult.client.request<unknown>({
-        path: `/pipelines/${args.id}`,
+        path: `/webhooks/${args.id}`,
         method: "GET",
       });
 
-      if (!result.success) return formatError(result.error, "pipeline");
+      if (!result.success) return formatError(result.error, "webhook");
       return formatSuccess(result.data);
     }
   );
 
-  // sevalla.pipelines.create
+  // sevalla.webhooks.create
   server.registerTool(
-    "sevalla.pipelines.create",
+    "sevalla.webhooks.create",
     {
-      title: "Create Pipeline",
-      description: "Create a new deployment pipeline.",
+      title: "Create Webhook",
+      description: "Create a new webhook.",
       inputSchema: z.object({
         company: z
           .uuid()
           .optional()
           .describe("Company UUID (defaults to SEVALLA_COMPANY_ID env var)"),
-        name: z.string().describe("Pipeline name"),
+        url: z.string().describe("Webhook endpoint URL"),
+        events: z
+          .array(z.string())
+          .describe("Array of event types to subscribe to"),
       }),
       outputSchema: sevallaOutputSchema,
       annotations: { openWorldHint: true },
@@ -122,29 +125,34 @@ export function registerPipelineTools(server: McpServer): void {
       const companyId = args.company ?? getCompanyId();
       const body = buildParams({
         company: companyId,
-        name: args.name,
+        url: args.url,
+        events: args.events,
       });
 
       const result = await clientResult.client.request<unknown>({
-        path: "/pipelines",
+        path: "/webhooks",
         method: "POST",
         body,
       });
 
-      if (!result.success) return formatError(result.error, "pipeline");
+      if (!result.success) return formatError(result.error, "webhook");
       return formatSuccess(result.data);
     }
   );
 
-  // sevalla.pipelines.update
+  // sevalla.webhooks.update
   server.registerTool(
-    "sevalla.pipelines.update",
+    "sevalla.webhooks.update",
     {
-      title: "Update Pipeline",
-      description: "Update an existing pipeline.",
+      title: "Update Webhook",
+      description: "Update an existing webhook's configuration.",
       inputSchema: z.object({
-        id: z.uuid().describe("Pipeline UUID"),
-        name: z.string().optional().describe("New pipeline name"),
+        id: z.uuid().describe("Webhook UUID"),
+        url: z.string().optional().describe("New webhook endpoint URL"),
+        events: z
+          .array(z.string())
+          .optional()
+          .describe("New array of event types to subscribe to"),
       }),
       outputSchema: sevallaOutputSchema,
       annotations: { openWorldHint: true },
@@ -154,29 +162,30 @@ export function registerPipelineTools(server: McpServer): void {
       if (!clientResult.success) return formatAuthError(clientResult.error);
 
       const body = buildParams({
-        name: args.name,
+        url: args.url,
+        events: args.events,
       });
 
       const result = await clientResult.client.request<unknown>({
-        path: `/pipelines/${args.id}`,
+        path: `/webhooks/${args.id}`,
         method: "PATCH",
         body,
       });
 
-      if (!result.success) return formatError(result.error, "pipeline");
+      if (!result.success) return formatError(result.error, "webhook");
       return formatSuccess(result.data);
     }
   );
 
-  // sevalla.pipelines.delete
+  // sevalla.webhooks.delete
   server.registerTool(
-    "sevalla.pipelines.delete",
+    "sevalla.webhooks.delete",
     {
-      title: "Delete Pipeline",
+      title: "Delete Webhook",
       description:
-        "Permanently delete a pipeline. This action cannot be undone.",
+        "Permanently delete a webhook. This action cannot be undone.",
       inputSchema: z.object({
-        id: z.uuid().describe("Pipeline UUID"),
+        id: z.uuid().describe("Webhook UUID"),
       }),
       outputSchema: sevallaOutputSchema,
       annotations: {
@@ -190,23 +199,23 @@ export function registerPipelineTools(server: McpServer): void {
       if (!clientResult.success) return formatAuthError(clientResult.error);
 
       const result = await clientResult.client.request<unknown>({
-        path: `/pipelines/${args.id}`,
+        path: `/webhooks/${args.id}`,
         method: "DELETE",
       });
 
-      if (!result.success) return formatError(result.error, "pipeline");
+      if (!result.success) return formatError(result.error, "webhook");
       return formatSuccess(result.data);
     }
   );
 
-  // sevalla.pipelines.promote
+  // sevalla.webhooks.toggle
   server.registerTool(
-    "sevalla.pipelines.promote",
+    "sevalla.webhooks.toggle",
     {
-      title: "Promote Pipeline",
-      description: "Promote builds between pipeline stages.",
+      title: "Toggle Webhook",
+      description: "Toggle a webhook's enabled/disabled state.",
       inputSchema: z.object({
-        id: z.uuid().describe("Pipeline UUID"),
+        id: z.uuid().describe("Webhook UUID"),
       }),
       outputSchema: sevallaOutputSchema,
       annotations: { openWorldHint: true },
@@ -216,24 +225,23 @@ export function registerPipelineTools(server: McpServer): void {
       if (!clientResult.success) return formatAuthError(clientResult.error);
 
       const result = await clientResult.client.request<unknown>({
-        path: `/pipelines/${args.id}/promote`,
+        path: `/webhooks/${args.id}/toggle`,
         method: "POST",
       });
 
-      if (!result.success) return formatError(result.error, "pipeline");
+      if (!result.success) return formatError(result.error, "webhook");
       return formatSuccess(result.data);
     }
   );
 
-  // sevalla.pipelines.stages.create
+  // sevalla.webhooks.roll-secret
   server.registerTool(
-    "sevalla.pipelines.stages.create",
+    "sevalla.webhooks.roll-secret",
     {
-      title: "Create Pipeline Stage",
-      description: "Create a new stage in a pipeline.",
+      title: "Roll Webhook Secret",
+      description: "Roll (regenerate) the signing secret for a webhook.",
       inputSchema: z.object({
-        id: z.uuid().describe("Pipeline UUID"),
-        name: z.string().optional().describe("Stage name"),
+        id: z.uuid().describe("Webhook UUID"),
       }),
       outputSchema: sevallaOutputSchema,
       annotations: { openWorldHint: true },
@@ -242,34 +250,28 @@ export function registerPipelineTools(server: McpServer): void {
       const clientResult = getSevallaClient(extra);
       if (!clientResult.success) return formatAuthError(clientResult.error);
 
-      const body = buildParams({
-        name: args.name,
-      });
-
       const result = await clientResult.client.request<unknown>({
-        path: `/pipelines/${args.id}/stages`,
+        path: `/webhooks/${args.id}/roll-secret`,
         method: "POST",
-        body,
       });
 
-      if (!result.success) return formatError(result.error, "pipeline stage");
+      if (!result.success) return formatError(result.error, "webhook");
       return formatSuccess(result.data);
     }
   );
 
-  // sevalla.pipelines.stages.delete
+  // sevalla.webhooks.event-deliveries.list
   server.registerTool(
-    "sevalla.pipelines.stages.delete",
+    "sevalla.webhooks.event-deliveries.list",
     {
-      title: "Delete Pipeline Stage",
-      description: "Delete a stage from a pipeline.",
+      title: "List Webhook Event Deliveries",
+      description: "List event deliveries for a specific webhook.",
       inputSchema: z.object({
-        id: z.uuid().describe("Pipeline UUID"),
-        stage_id: z.uuid().describe("Stage UUID"),
+        id: z.uuid().describe("Webhook UUID"),
       }),
       outputSchema: sevallaOutputSchema,
       annotations: {
-        destructiveHint: true,
+        readOnlyHint: true,
         idempotentHint: true,
         openWorldHint: true,
       },
@@ -279,63 +281,44 @@ export function registerPipelineTools(server: McpServer): void {
       if (!clientResult.success) return formatAuthError(clientResult.error);
 
       const result = await clientResult.client.request<unknown>({
-        path: `/pipelines/${args.id}/stages/${args.stage_id}`,
-        method: "DELETE",
+        path: `/webhooks/${args.id}/event-deliveries`,
+        method: "GET",
       });
 
-      if (!result.success) return formatError(result.error, "pipeline stage");
+      if (!result.success)
+        return formatError(result.error, "webhook event delivery");
       return formatSuccess(result.data);
     }
   );
 
-  // sevalla.pipelines.enable-preview
+  // sevalla.webhooks.event-deliveries.get
   server.registerTool(
-    "sevalla.pipelines.enable-preview",
+    "sevalla.webhooks.event-deliveries.get",
     {
-      title: "Enable Pipeline Preview",
-      description: "Enable preview environments for a pipeline.",
+      title: "Get Webhook Event Delivery",
+      description: "Get details of a specific webhook event delivery.",
       inputSchema: z.object({
-        id: z.uuid().describe("Pipeline UUID"),
+        id: z.uuid().describe("Webhook UUID"),
+        delivery_id: z.uuid().describe("Event delivery UUID"),
       }),
       outputSchema: sevallaOutputSchema,
-      annotations: { openWorldHint: true },
+      annotations: {
+        readOnlyHint: true,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
     },
     async (args, extra) => {
       const clientResult = getSevallaClient(extra);
       if (!clientResult.success) return formatAuthError(clientResult.error);
 
       const result = await clientResult.client.request<unknown>({
-        path: `/pipelines/${args.id}/preview/enable`,
-        method: "POST",
+        path: `/webhooks/${args.id}/event-deliveries/${args.delivery_id}`,
+        method: "GET",
       });
 
-      if (!result.success) return formatError(result.error, "pipeline");
-      return formatSuccess(result.data);
-    }
-  );
-
-  // sevalla.pipelines.disable-preview
-  server.registerTool(
-    "sevalla.pipelines.disable-preview",
-    {
-      title: "Disable Pipeline Preview",
-      description: "Disable preview environments for a pipeline.",
-      inputSchema: z.object({
-        id: z.uuid().describe("Pipeline UUID"),
-      }),
-      outputSchema: sevallaOutputSchema,
-      annotations: { openWorldHint: true },
-    },
-    async (args, extra) => {
-      const clientResult = getSevallaClient(extra);
-      if (!clientResult.success) return formatAuthError(clientResult.error);
-
-      const result = await clientResult.client.request<unknown>({
-        path: `/pipelines/${args.id}/preview/disable`,
-        method: "POST",
-      });
-
-      if (!result.success) return formatError(result.error, "pipeline");
+      if (!result.success)
+        return formatError(result.error, "webhook event delivery");
       return formatSuccess(result.data);
     }
   );

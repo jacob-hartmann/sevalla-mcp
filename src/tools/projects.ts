@@ -1,7 +1,7 @@
 /**
- * Sevalla Pipeline Tools
+ * Sevalla Project Tools
  *
- * Tools for managing Sevalla deployment pipelines.
+ * Tools for managing Sevalla projects.
  */
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -16,13 +16,13 @@ import {
   sevallaOutputSchema,
 } from "./utils.js";
 
-export function registerPipelineTools(server: McpServer): void {
-  // sevalla.pipelines.list
+export function registerProjectTools(server: McpServer): void {
+  // sevalla.projects.list
   server.registerTool(
-    "sevalla.pipelines.list",
+    "sevalla.projects.list",
     {
-      title: "List Pipelines",
-      description: "List all deployment pipelines for a company.",
+      title: "List Projects",
+      description: "List all projects for a company.",
       inputSchema: z.object({
         company: z
           .uuid()
@@ -59,24 +59,24 @@ export function registerPipelineTools(server: McpServer): void {
       });
 
       const result = await clientResult.client.request<unknown>({
-        path: "/pipelines",
+        path: "/projects",
         method: "GET",
         params: params as Record<string, string>,
       });
 
-      if (!result.success) return formatError(result.error, "pipeline");
+      if (!result.success) return formatError(result.error, "project");
       return formatSuccess(result.data);
     }
   );
 
-  // sevalla.pipelines.get
+  // sevalla.projects.get
   server.registerTool(
-    "sevalla.pipelines.get",
+    "sevalla.projects.get",
     {
-      title: "Get Pipeline",
-      description: "Get details of a specific pipeline.",
+      title: "Get Project",
+      description: "Get details of a specific project.",
       inputSchema: z.object({
-        id: z.uuid().describe("Pipeline UUID"),
+        id: z.uuid().describe("Project UUID"),
       }),
       outputSchema: sevallaOutputSchema,
       annotations: {
@@ -90,27 +90,27 @@ export function registerPipelineTools(server: McpServer): void {
       if (!clientResult.success) return formatAuthError(clientResult.error);
 
       const result = await clientResult.client.request<unknown>({
-        path: `/pipelines/${args.id}`,
+        path: `/projects/${args.id}`,
         method: "GET",
       });
 
-      if (!result.success) return formatError(result.error, "pipeline");
+      if (!result.success) return formatError(result.error, "project");
       return formatSuccess(result.data);
     }
   );
 
-  // sevalla.pipelines.create
+  // sevalla.projects.create
   server.registerTool(
-    "sevalla.pipelines.create",
+    "sevalla.projects.create",
     {
-      title: "Create Pipeline",
-      description: "Create a new deployment pipeline.",
+      title: "Create Project",
+      description: "Create a new project.",
       inputSchema: z.object({
         company: z
           .uuid()
           .optional()
           .describe("Company UUID (defaults to SEVALLA_COMPANY_ID env var)"),
-        name: z.string().describe("Pipeline name"),
+        name: z.string().describe("Name for the project"),
       }),
       outputSchema: sevallaOutputSchema,
       annotations: { openWorldHint: true },
@@ -126,28 +126,33 @@ export function registerPipelineTools(server: McpServer): void {
       });
 
       const result = await clientResult.client.request<unknown>({
-        path: "/pipelines",
+        path: "/projects",
         method: "POST",
         body,
       });
 
-      if (!result.success) return formatError(result.error, "pipeline");
+      if (!result.success) return formatError(result.error, "project");
       return formatSuccess(result.data);
     }
   );
 
-  // sevalla.pipelines.update
+  // sevalla.projects.update
   server.registerTool(
-    "sevalla.pipelines.update",
+    "sevalla.projects.update",
     {
-      title: "Update Pipeline",
-      description: "Update an existing pipeline.",
+      title: "Update Project",
+      description: "Update an existing project's configuration.",
       inputSchema: z.object({
-        id: z.uuid().describe("Pipeline UUID"),
-        name: z.string().optional().describe("New pipeline name"),
+        id: z.uuid().describe("Project UUID"),
+        name: z
+          .string()
+          .optional()
+          .describe("New name for the project"),
       }),
       outputSchema: sevallaOutputSchema,
-      annotations: { openWorldHint: true },
+      annotations: {
+        openWorldHint: true,
+      },
     },
     async (args, extra) => {
       const clientResult = getSevallaClient(extra);
@@ -158,25 +163,25 @@ export function registerPipelineTools(server: McpServer): void {
       });
 
       const result = await clientResult.client.request<unknown>({
-        path: `/pipelines/${args.id}`,
+        path: `/projects/${args.id}`,
         method: "PATCH",
         body,
       });
 
-      if (!result.success) return formatError(result.error, "pipeline");
+      if (!result.success) return formatError(result.error, "project");
       return formatSuccess(result.data);
     }
   );
 
-  // sevalla.pipelines.delete
+  // sevalla.projects.delete
   server.registerTool(
-    "sevalla.pipelines.delete",
+    "sevalla.projects.delete",
     {
-      title: "Delete Pipeline",
+      title: "Delete Project",
       description:
-        "Permanently delete a pipeline. This action cannot be undone.",
+        "Permanently delete a project. This action cannot be undone.",
       inputSchema: z.object({
-        id: z.uuid().describe("Pipeline UUID"),
+        id: z.uuid().describe("Project UUID"),
       }),
       outputSchema: sevallaOutputSchema,
       annotations: {
@@ -190,50 +195,25 @@ export function registerPipelineTools(server: McpServer): void {
       if (!clientResult.success) return formatAuthError(clientResult.error);
 
       const result = await clientResult.client.request<unknown>({
-        path: `/pipelines/${args.id}`,
+        path: `/projects/${args.id}`,
         method: "DELETE",
       });
 
-      if (!result.success) return formatError(result.error, "pipeline");
+      if (!result.success) return formatError(result.error, "project");
       return formatSuccess(result.data);
     }
   );
 
-  // sevalla.pipelines.promote
+  // sevalla.projects.services.add
   server.registerTool(
-    "sevalla.pipelines.promote",
+    "sevalla.projects.services.add",
     {
-      title: "Promote Pipeline",
-      description: "Promote builds between pipeline stages.",
+      title: "Add Service to Project",
+      description: "Add a service to an existing project.",
       inputSchema: z.object({
-        id: z.uuid().describe("Pipeline UUID"),
-      }),
-      outputSchema: sevallaOutputSchema,
-      annotations: { openWorldHint: true },
-    },
-    async (args, extra) => {
-      const clientResult = getSevallaClient(extra);
-      if (!clientResult.success) return formatAuthError(clientResult.error);
-
-      const result = await clientResult.client.request<unknown>({
-        path: `/pipelines/${args.id}/promote`,
-        method: "POST",
-      });
-
-      if (!result.success) return formatError(result.error, "pipeline");
-      return formatSuccess(result.data);
-    }
-  );
-
-  // sevalla.pipelines.stages.create
-  server.registerTool(
-    "sevalla.pipelines.stages.create",
-    {
-      title: "Create Pipeline Stage",
-      description: "Create a new stage in a pipeline.",
-      inputSchema: z.object({
-        id: z.uuid().describe("Pipeline UUID"),
-        name: z.string().optional().describe("Stage name"),
+        id: z.uuid().describe("Project UUID"),
+        service_id: z.uuid().describe("Service UUID to add"),
+        service_type: z.string().describe("Type of the service"),
       }),
       outputSchema: sevallaOutputSchema,
       annotations: { openWorldHint: true },
@@ -243,29 +223,30 @@ export function registerPipelineTools(server: McpServer): void {
       if (!clientResult.success) return formatAuthError(clientResult.error);
 
       const body = buildParams({
-        name: args.name,
+        service_id: args.service_id,
+        service_type: args.service_type,
       });
 
       const result = await clientResult.client.request<unknown>({
-        path: `/pipelines/${args.id}/stages`,
+        path: `/projects/${args.id}/services`,
         method: "POST",
         body,
       });
 
-      if (!result.success) return formatError(result.error, "pipeline stage");
+      if (!result.success) return formatError(result.error, "project");
       return formatSuccess(result.data);
     }
   );
 
-  // sevalla.pipelines.stages.delete
+  // sevalla.projects.services.remove
   server.registerTool(
-    "sevalla.pipelines.stages.delete",
+    "sevalla.projects.services.remove",
     {
-      title: "Delete Pipeline Stage",
-      description: "Delete a stage from a pipeline.",
+      title: "Remove Service from Project",
+      description: "Remove a service from a project.",
       inputSchema: z.object({
-        id: z.uuid().describe("Pipeline UUID"),
-        stage_id: z.uuid().describe("Stage UUID"),
+        id: z.uuid().describe("Project UUID"),
+        service_id: z.uuid().describe("Service UUID to remove"),
       }),
       outputSchema: sevallaOutputSchema,
       annotations: {
@@ -279,63 +260,11 @@ export function registerPipelineTools(server: McpServer): void {
       if (!clientResult.success) return formatAuthError(clientResult.error);
 
       const result = await clientResult.client.request<unknown>({
-        path: `/pipelines/${args.id}/stages/${args.stage_id}`,
+        path: `/projects/${args.id}/services/${args.service_id}`,
         method: "DELETE",
       });
 
-      if (!result.success) return formatError(result.error, "pipeline stage");
-      return formatSuccess(result.data);
-    }
-  );
-
-  // sevalla.pipelines.enable-preview
-  server.registerTool(
-    "sevalla.pipelines.enable-preview",
-    {
-      title: "Enable Pipeline Preview",
-      description: "Enable preview environments for a pipeline.",
-      inputSchema: z.object({
-        id: z.uuid().describe("Pipeline UUID"),
-      }),
-      outputSchema: sevallaOutputSchema,
-      annotations: { openWorldHint: true },
-    },
-    async (args, extra) => {
-      const clientResult = getSevallaClient(extra);
-      if (!clientResult.success) return formatAuthError(clientResult.error);
-
-      const result = await clientResult.client.request<unknown>({
-        path: `/pipelines/${args.id}/preview/enable`,
-        method: "POST",
-      });
-
-      if (!result.success) return formatError(result.error, "pipeline");
-      return formatSuccess(result.data);
-    }
-  );
-
-  // sevalla.pipelines.disable-preview
-  server.registerTool(
-    "sevalla.pipelines.disable-preview",
-    {
-      title: "Disable Pipeline Preview",
-      description: "Disable preview environments for a pipeline.",
-      inputSchema: z.object({
-        id: z.uuid().describe("Pipeline UUID"),
-      }),
-      outputSchema: sevallaOutputSchema,
-      annotations: { openWorldHint: true },
-    },
-    async (args, extra) => {
-      const clientResult = getSevallaClient(extra);
-      if (!clientResult.success) return formatAuthError(clientResult.error);
-
-      const result = await clientResult.client.request<unknown>({
-        path: `/pipelines/${args.id}/preview/disable`,
-        method: "POST",
-      });
-
-      if (!result.success) return formatError(result.error, "pipeline");
+      if (!result.success) return formatError(result.error, "project");
       return formatSuccess(result.data);
     }
   );

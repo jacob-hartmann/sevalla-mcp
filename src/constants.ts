@@ -9,7 +9,7 @@
 // ---------------------------------------------------------------------------
 
 /** Sevalla API base URL */
-export const SEVALLA_API_BASE_URL = "https://api.sevalla.com/v2";
+export const SEVALLA_API_BASE_URL = "https://api.sevalla.com/v3";
 
 // ---------------------------------------------------------------------------
 // Timeouts

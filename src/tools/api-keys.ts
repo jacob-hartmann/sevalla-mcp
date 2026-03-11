@@ -1,12 +1,13 @@
 /**
- * Sevalla Process Tools
+ * Sevalla API Keys Tools
  *
- * Tools for managing application processes.
+ * Tools for managing API keys programmatically.
  */
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { getSevallaClient } from "../sevalla/client-factory.js";
+import { getCompanyId } from "../sevalla/auth.js";
 import {
   formatAuthError,
   formatError,
@@ -15,84 +16,122 @@ import {
   sevallaOutputSchema,
 } from "./utils.js";
 
-export function registerProcessTools(server: McpServer): void {
-  // sevalla.processes.list
+export function registerApiKeyTools(server: McpServer): void {
+  // sevalla.api-keys.list
   server.registerTool(
-    "sevalla.processes.list",
+    "sevalla.api-keys.list",
     {
-      title: "List Processes",
-      description: "List all processes for an application.",
+      title: "List API Keys",
+      description: "List all API keys for a company.",
       inputSchema: z.object({
-        app_id: z.uuid().describe("Application UUID"),
-      }),
-      outputSchema: sevallaOutputSchema,
-      annotations: {
-        readOnlyHint: true,
-        idempotentHint: true,
-        openWorldHint: true,
-      },
-    },
-    async (args, extra) => {
-      const clientResult = getSevallaClient(extra);
-      if (!clientResult.success) return formatAuthError(clientResult.error);
-
-      const result = await clientResult.client.request<unknown>({
-        path: `/applications/${args.app_id}/processes`,
-        method: "GET",
-      });
-
-      if (!result.success) return formatError(result.error, "process");
-      return formatSuccess(result.data);
-    }
-  );
-
-  // sevalla.processes.get
-  server.registerTool(
-    "sevalla.processes.get",
-    {
-      title: "Get Process",
-      description: "Get details of a specific application process.",
-      inputSchema: z.object({
-        app_id: z.uuid().describe("Application UUID"),
-        id: z.uuid().describe("Process UUID"),
-      }),
-      outputSchema: sevallaOutputSchema,
-      annotations: {
-        readOnlyHint: true,
-        idempotentHint: true,
-        openWorldHint: true,
-      },
-    },
-    async (args, extra) => {
-      const clientResult = getSevallaClient(extra);
-      if (!clientResult.success) return formatAuthError(clientResult.error);
-
-      const result = await clientResult.client.request<unknown>({
-        path: `/applications/${args.app_id}/processes/${args.id}`,
-        method: "GET",
-      });
-
-      if (!result.success) return formatError(result.error, "process");
-      return formatSuccess(result.data);
-    }
-  );
-
-  // sevalla.processes.create
-  server.registerTool(
-    "sevalla.processes.create",
-    {
-      title: "Create Process",
-      description: "Create a new process for an application.",
-      inputSchema: z.object({
-        app_id: z.uuid().describe("Application UUID"),
-        name: z.string().describe("Process name"),
-        command: z.string().describe("Process start command"),
-        size: z.string().optional().describe("Pod size identifier"),
-        pod_count: z
-          .number()
-          .min(0)
+        company: z
+          .uuid()
           .optional()
-          .describe("Number of pods to run"),
+          .describe("Company UUID (defaults to SEVALLA_COMPANY_ID env var)"),
+      }),
+      outputSchema: sevallaOutputSchema,
+      annotations: {
+        readOnlyHint: true,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
+    },
+    async (args, extra) => {
+      const clientResult = getSevallaClient(extra);
+      if (!clientResult.success) return formatAuthError(clientResult.error);
+
+      const companyId = args.company ?? getCompanyId();
+      const params = buildParams({
+        company: companyId,
+      });
+
+      const result = await clientResult.client.request<unknown>({
+        path: "/api-keys",
+        method: "GET",
+        params: params as Record<string, string>,
+      });
+
+      if (!result.success) return formatError(result.error, "API key");
+      return formatSuccess(result.data);
+    }
+  );
+
+  // sevalla.api-keys.get
+  server.registerTool(
+    "sevalla.api-keys.get",
+    {
+      title: "Get API Key",
+      description: "Get details of a specific API key.",
+      inputSchema: z.object({
+        id: z.uuid().describe("API key UUID"),
+      }),
+      outputSchema: sevallaOutputSchema,
+      annotations: {
+        readOnlyHint: true,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
+    },
+    async (args, extra) => {
+      const clientResult = getSevallaClient(extra);
+      if (!clientResult.success) return formatAuthError(clientResult.error);
+
+      const result = await clientResult.client.request<unknown>({
+        path: `/api-keys/${args.id}`,
+        method: "GET",
+      });
+
+      if (!result.success) return formatError(result.error, "API key");
+      return formatSuccess(result.data);
+    }
+  );
+
+  // sevalla.api-keys.create
+  server.registerTool(
+    "sevalla.api-keys.create",
+    {
+      title: "Create API Key",
+      description: "Create a new API key with specified roles and capabilities.",
+      inputSchema: z.object({
+        company: z
+          .uuid()
+          .optional()
+          .describe("Company UUID (defaults to SEVALLA_COMPANY_ID env var)"),
+        name: z.string().describe("API key name"),
+      }),
+      outputSchema: sevallaOutputSchema,
+      annotations: { openWorldHint: true },
+    },
+    async (args, extra) => {
+      const clientResult = getSevallaClient(extra);
+      if (!clientResult.success) return formatAuthError(clientResult.error);
+
+      const companyId = args.company ?? getCompanyId();
+      const body = buildParams({
+        company: companyId,
+        name: args.name,
+      });
+
+      const result = await clientResult.client.request<unknown>({
+        path: "/api-keys",
+        method: "POST",
+        body,
+      });
+
+      if (!result.success) return formatError(result.error, "API key");
+      return formatSuccess(result.data);
+    }
+  );
+
+  // sevalla.api-keys.update
+  server.registerTool(
+    "sevalla.api-keys.update",
+    {
+      title: "Update API Key",
+      description: "Update an API key's name, roles, or capabilities.",
+      inputSchema: z.object({
+        id: z.uuid().describe("API key UUID"),
+        name: z.string().optional().describe("New API key name"),
       }),
       outputSchema: sevallaOutputSchema,
       annotations: { openWorldHint: true },
@@ -103,72 +142,28 @@ export function registerProcessTools(server: McpServer): void {
 
       const body = buildParams({
         name: args.name,
-        command: args.command,
-        size: args.size,
-        pod_count: args.pod_count,
       });
 
       const result = await clientResult.client.request<unknown>({
-        path: `/applications/${args.app_id}/processes`,
-        method: "POST",
-        body,
-      });
-
-      if (!result.success) return formatError(result.error, "process");
-      return formatSuccess(result.data);
-    }
-  );
-
-  // sevalla.processes.update
-  server.registerTool(
-    "sevalla.processes.update",
-    {
-      title: "Update Process",
-      description: "Update an application process configuration.",
-      inputSchema: z.object({
-        app_id: z.uuid().describe("Application UUID"),
-        id: z.uuid().describe("Process UUID"),
-        pod_count: z
-          .number()
-          .min(0)
-          .optional()
-          .describe("Number of pods to run"),
-        size: z.string().optional().describe("Pod size identifier"),
-      }),
-      outputSchema: sevallaOutputSchema,
-      annotations: {
-        openWorldHint: true,
-      },
-    },
-    async (args, extra) => {
-      const clientResult = getSevallaClient(extra);
-      if (!clientResult.success) return formatAuthError(clientResult.error);
-
-      const body = buildParams({
-        pod_count: args.pod_count,
-        size: args.size,
-      });
-
-      const result = await clientResult.client.request<unknown>({
-        path: `/applications/${args.app_id}/processes/${args.id}`,
+        path: `/api-keys/${args.id}`,
         method: "PATCH",
         body,
       });
 
-      if (!result.success) return formatError(result.error, "process");
+      if (!result.success) return formatError(result.error, "API key");
       return formatSuccess(result.data);
     }
   );
 
-  // sevalla.processes.delete
+  // sevalla.api-keys.delete
   server.registerTool(
-    "sevalla.processes.delete",
+    "sevalla.api-keys.delete",
     {
-      title: "Delete Process",
-      description: "Delete an application process.",
+      title: "Delete API Key",
+      description:
+        "Permanently delete an API key. This action cannot be undone.",
       inputSchema: z.object({
-        app_id: z.uuid().describe("Application UUID"),
-        id: z.uuid().describe("Process UUID"),
+        id: z.uuid().describe("API key UUID"),
       }),
       outputSchema: sevallaOutputSchema,
       annotations: {
@@ -182,24 +177,23 @@ export function registerProcessTools(server: McpServer): void {
       if (!clientResult.success) return formatAuthError(clientResult.error);
 
       const result = await clientResult.client.request<unknown>({
-        path: `/applications/${args.app_id}/processes/${args.id}`,
+        path: `/api-keys/${args.id}`,
         method: "DELETE",
       });
 
-      if (!result.success) return formatError(result.error, "process");
+      if (!result.success) return formatError(result.error, "API key");
       return formatSuccess(result.data);
     }
   );
 
-  // sevalla.processes.trigger-cron
+  // sevalla.api-keys.rotate
   server.registerTool(
-    "sevalla.processes.trigger-cron",
+    "sevalla.api-keys.rotate",
     {
-      title: "Trigger Cron Job",
-      description: "Manually trigger a cron job process.",
+      title: "Rotate API Key",
+      description: "Generate a new token for an API key.",
       inputSchema: z.object({
-        app_id: z.uuid().describe("Application UUID"),
-        id: z.uuid().describe("Process UUID"),
+        id: z.uuid().describe("API key UUID"),
       }),
       outputSchema: sevallaOutputSchema,
       annotations: { openWorldHint: true },
@@ -209,11 +203,37 @@ export function registerProcessTools(server: McpServer): void {
       if (!clientResult.success) return formatAuthError(clientResult.error);
 
       const result = await clientResult.client.request<unknown>({
-        path: `/applications/${args.app_id}/processes/${args.id}/trigger`,
+        path: `/api-keys/${args.id}/rotate`,
         method: "POST",
       });
 
-      if (!result.success) return formatError(result.error, "process");
+      if (!result.success) return formatError(result.error, "API key");
+      return formatSuccess(result.data);
+    }
+  );
+
+  // sevalla.api-keys.toggle
+  server.registerTool(
+    "sevalla.api-keys.toggle",
+    {
+      title: "Toggle API Key",
+      description: "Enable or disable an API key.",
+      inputSchema: z.object({
+        id: z.uuid().describe("API key UUID"),
+      }),
+      outputSchema: sevallaOutputSchema,
+      annotations: { openWorldHint: true },
+    },
+    async (args, extra) => {
+      const clientResult = getSevallaClient(extra);
+      if (!clientResult.success) return formatAuthError(clientResult.error);
+
+      const result = await clientResult.client.request<unknown>({
+        path: `/api-keys/${args.id}/toggle`,
+        method: "POST",
+      });
+
+      if (!result.success) return formatError(result.error, "API key");
       return formatSuccess(result.data);
     }
   );

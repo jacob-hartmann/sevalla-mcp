@@ -1,7 +1,7 @@
 /**
- * Sevalla Pipeline Tools
+ * Sevalla Object Storage Tools
  *
- * Tools for managing Sevalla deployment pipelines.
+ * Tools for managing Sevalla object storage buckets, CDN, and objects.
  */
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -16,13 +16,13 @@ import {
   sevallaOutputSchema,
 } from "./utils.js";
 
-export function registerPipelineTools(server: McpServer): void {
-  // sevalla.pipelines.list
+export function registerObjectStorageTools(server: McpServer): void {
+  // sevalla.object-storage.list
   server.registerTool(
-    "sevalla.pipelines.list",
+    "sevalla.object-storage.list",
     {
-      title: "List Pipelines",
-      description: "List all deployment pipelines for a company.",
+      title: "List Object Storages",
+      description: "List all object storages for a company.",
       inputSchema: z.object({
         company: z
           .uuid()
@@ -59,24 +59,24 @@ export function registerPipelineTools(server: McpServer): void {
       });
 
       const result = await clientResult.client.request<unknown>({
-        path: "/pipelines",
+        path: "/object-storages",
         method: "GET",
         params: params as Record<string, string>,
       });
 
-      if (!result.success) return formatError(result.error, "pipeline");
+      if (!result.success) return formatError(result.error, "object storage");
       return formatSuccess(result.data);
     }
   );
 
-  // sevalla.pipelines.get
+  // sevalla.object-storage.get
   server.registerTool(
-    "sevalla.pipelines.get",
+    "sevalla.object-storage.get",
     {
-      title: "Get Pipeline",
-      description: "Get details of a specific pipeline.",
+      title: "Get Object Storage",
+      description: "Get details of a specific object storage.",
       inputSchema: z.object({
-        id: z.uuid().describe("Pipeline UUID"),
+        id: z.uuid().describe("Object storage UUID"),
       }),
       outputSchema: sevallaOutputSchema,
       annotations: {
@@ -90,27 +90,33 @@ export function registerPipelineTools(server: McpServer): void {
       if (!clientResult.success) return formatAuthError(clientResult.error);
 
       const result = await clientResult.client.request<unknown>({
-        path: `/pipelines/${args.id}`,
+        path: `/object-storages/${args.id}`,
         method: "GET",
       });
 
-      if (!result.success) return formatError(result.error, "pipeline");
+      if (!result.success) return formatError(result.error, "object storage");
       return formatSuccess(result.data);
     }
   );
 
-  // sevalla.pipelines.create
+  // sevalla.object-storage.create
   server.registerTool(
-    "sevalla.pipelines.create",
+    "sevalla.object-storage.create",
     {
-      title: "Create Pipeline",
-      description: "Create a new deployment pipeline.",
+      title: "Create Object Storage",
+      description: "Create a new object storage.",
       inputSchema: z.object({
         company: z
           .uuid()
           .optional()
           .describe("Company UUID (defaults to SEVALLA_COMPANY_ID env var)"),
-        name: z.string().describe("Pipeline name"),
+        display_name: z
+          .string()
+          .describe("Display name for the object storage"),
+        location: z
+          .string()
+          .optional()
+          .describe("Data center location identifier"),
       }),
       outputSchema: sevallaOutputSchema,
       annotations: { openWorldHint: true },
@@ -122,29 +128,30 @@ export function registerPipelineTools(server: McpServer): void {
       const companyId = args.company ?? getCompanyId();
       const body = buildParams({
         company: companyId,
-        name: args.name,
+        display_name: args.display_name,
+        location: args.location,
       });
 
       const result = await clientResult.client.request<unknown>({
-        path: "/pipelines",
+        path: "/object-storages",
         method: "POST",
         body,
       });
 
-      if (!result.success) return formatError(result.error, "pipeline");
+      if (!result.success) return formatError(result.error, "object storage");
       return formatSuccess(result.data);
     }
   );
 
-  // sevalla.pipelines.update
+  // sevalla.object-storage.update
   server.registerTool(
-    "sevalla.pipelines.update",
+    "sevalla.object-storage.update",
     {
-      title: "Update Pipeline",
-      description: "Update an existing pipeline.",
+      title: "Update Object Storage",
+      description: "Update an existing object storage's configuration.",
       inputSchema: z.object({
-        id: z.uuid().describe("Pipeline UUID"),
-        name: z.string().optional().describe("New pipeline name"),
+        id: z.uuid().describe("Object storage UUID"),
+        display_name: z.string().optional().describe("New display name"),
       }),
       outputSchema: sevallaOutputSchema,
       annotations: { openWorldHint: true },
@@ -154,29 +161,29 @@ export function registerPipelineTools(server: McpServer): void {
       if (!clientResult.success) return formatAuthError(clientResult.error);
 
       const body = buildParams({
-        name: args.name,
+        display_name: args.display_name,
       });
 
       const result = await clientResult.client.request<unknown>({
-        path: `/pipelines/${args.id}`,
+        path: `/object-storages/${args.id}`,
         method: "PATCH",
         body,
       });
 
-      if (!result.success) return formatError(result.error, "pipeline");
+      if (!result.success) return formatError(result.error, "object storage");
       return formatSuccess(result.data);
     }
   );
 
-  // sevalla.pipelines.delete
+  // sevalla.object-storage.delete
   server.registerTool(
-    "sevalla.pipelines.delete",
+    "sevalla.object-storage.delete",
     {
-      title: "Delete Pipeline",
+      title: "Delete Object Storage",
       description:
-        "Permanently delete a pipeline. This action cannot be undone.",
+        "Permanently delete an object storage. This action cannot be undone.",
       inputSchema: z.object({
-        id: z.uuid().describe("Pipeline UUID"),
+        id: z.uuid().describe("Object storage UUID"),
       }),
       outputSchema: sevallaOutputSchema,
       annotations: {
@@ -190,23 +197,23 @@ export function registerPipelineTools(server: McpServer): void {
       if (!clientResult.success) return formatAuthError(clientResult.error);
 
       const result = await clientResult.client.request<unknown>({
-        path: `/pipelines/${args.id}`,
+        path: `/object-storages/${args.id}`,
         method: "DELETE",
       });
 
-      if (!result.success) return formatError(result.error, "pipeline");
+      if (!result.success) return formatError(result.error, "object storage");
       return formatSuccess(result.data);
     }
   );
 
-  // sevalla.pipelines.promote
+  // sevalla.object-storage.cdn.enable
   server.registerTool(
-    "sevalla.pipelines.promote",
+    "sevalla.object-storage.cdn.enable",
     {
-      title: "Promote Pipeline",
-      description: "Promote builds between pipeline stages.",
+      title: "Enable Object Storage CDN",
+      description: "Enable CDN for an object storage.",
       inputSchema: z.object({
-        id: z.uuid().describe("Pipeline UUID"),
+        id: z.uuid().describe("Object storage UUID"),
       }),
       outputSchema: sevallaOutputSchema,
       annotations: { openWorldHint: true },
@@ -216,24 +223,23 @@ export function registerPipelineTools(server: McpServer): void {
       if (!clientResult.success) return formatAuthError(clientResult.error);
 
       const result = await clientResult.client.request<unknown>({
-        path: `/pipelines/${args.id}/promote`,
+        path: `/object-storages/${args.id}/cdn/enable`,
         method: "POST",
       });
 
-      if (!result.success) return formatError(result.error, "pipeline");
+      if (!result.success) return formatError(result.error, "object storage");
       return formatSuccess(result.data);
     }
   );
 
-  // sevalla.pipelines.stages.create
+  // sevalla.object-storage.cdn.disable
   server.registerTool(
-    "sevalla.pipelines.stages.create",
+    "sevalla.object-storage.cdn.disable",
     {
-      title: "Create Pipeline Stage",
-      description: "Create a new stage in a pipeline.",
+      title: "Disable Object Storage CDN",
+      description: "Disable CDN for an object storage.",
       inputSchema: z.object({
-        id: z.uuid().describe("Pipeline UUID"),
-        name: z.string().optional().describe("Stage name"),
+        id: z.uuid().describe("Object storage UUID"),
       }),
       outputSchema: sevallaOutputSchema,
       annotations: { openWorldHint: true },
@@ -242,34 +248,28 @@ export function registerPipelineTools(server: McpServer): void {
       const clientResult = getSevallaClient(extra);
       if (!clientResult.success) return formatAuthError(clientResult.error);
 
-      const body = buildParams({
-        name: args.name,
-      });
-
       const result = await clientResult.client.request<unknown>({
-        path: `/pipelines/${args.id}/stages`,
+        path: `/object-storages/${args.id}/cdn/disable`,
         method: "POST",
-        body,
       });
 
-      if (!result.success) return formatError(result.error, "pipeline stage");
+      if (!result.success) return formatError(result.error, "object storage");
       return formatSuccess(result.data);
     }
   );
 
-  // sevalla.pipelines.stages.delete
+  // sevalla.object-storage.objects.list
   server.registerTool(
-    "sevalla.pipelines.stages.delete",
+    "sevalla.object-storage.objects.list",
     {
-      title: "Delete Pipeline Stage",
-      description: "Delete a stage from a pipeline.",
+      title: "List Object Storage Objects",
+      description: "List all objects in an object storage.",
       inputSchema: z.object({
-        id: z.uuid().describe("Pipeline UUID"),
-        stage_id: z.uuid().describe("Stage UUID"),
+        id: z.uuid().describe("Object storage UUID"),
       }),
       outputSchema: sevallaOutputSchema,
       annotations: {
-        destructiveHint: true,
+        readOnlyHint: true,
         idempotentHint: true,
         openWorldHint: true,
       },
@@ -279,63 +279,45 @@ export function registerPipelineTools(server: McpServer): void {
       if (!clientResult.success) return formatAuthError(clientResult.error);
 
       const result = await clientResult.client.request<unknown>({
-        path: `/pipelines/${args.id}/stages/${args.stage_id}`,
+        path: `/object-storages/${args.id}/objects`,
+        method: "GET",
+      });
+
+      if (!result.success) return formatError(result.error, "object storage object");
+      return formatSuccess(result.data);
+    }
+  );
+
+  // sevalla.object-storage.objects.delete
+  server.registerTool(
+    "sevalla.object-storage.objects.delete",
+    {
+      title: "Delete Object Storage Objects",
+      description:
+        "Delete objects from an object storage by their keys. This action cannot be undone.",
+      inputSchema: z.object({
+        id: z.uuid().describe("Object storage UUID"),
+        keys: z
+          .array(z.string())
+          .describe("Array of object keys to delete"),
+      }),
+      outputSchema: sevallaOutputSchema,
+      annotations: {
+        destructiveHint: true,
+        openWorldHint: true,
+      },
+    },
+    async (args, extra) => {
+      const clientResult = getSevallaClient(extra);
+      if (!clientResult.success) return formatAuthError(clientResult.error);
+
+      const result = await clientResult.client.request<unknown>({
+        path: `/object-storages/${args.id}/objects`,
         method: "DELETE",
+        body: { keys: args.keys },
       });
 
-      if (!result.success) return formatError(result.error, "pipeline stage");
-      return formatSuccess(result.data);
-    }
-  );
-
-  // sevalla.pipelines.enable-preview
-  server.registerTool(
-    "sevalla.pipelines.enable-preview",
-    {
-      title: "Enable Pipeline Preview",
-      description: "Enable preview environments for a pipeline.",
-      inputSchema: z.object({
-        id: z.uuid().describe("Pipeline UUID"),
-      }),
-      outputSchema: sevallaOutputSchema,
-      annotations: { openWorldHint: true },
-    },
-    async (args, extra) => {
-      const clientResult = getSevallaClient(extra);
-      if (!clientResult.success) return formatAuthError(clientResult.error);
-
-      const result = await clientResult.client.request<unknown>({
-        path: `/pipelines/${args.id}/preview/enable`,
-        method: "POST",
-      });
-
-      if (!result.success) return formatError(result.error, "pipeline");
-      return formatSuccess(result.data);
-    }
-  );
-
-  // sevalla.pipelines.disable-preview
-  server.registerTool(
-    "sevalla.pipelines.disable-preview",
-    {
-      title: "Disable Pipeline Preview",
-      description: "Disable preview environments for a pipeline.",
-      inputSchema: z.object({
-        id: z.uuid().describe("Pipeline UUID"),
-      }),
-      outputSchema: sevallaOutputSchema,
-      annotations: { openWorldHint: true },
-    },
-    async (args, extra) => {
-      const clientResult = getSevallaClient(extra);
-      if (!clientResult.success) return formatAuthError(clientResult.error);
-
-      const result = await clientResult.client.request<unknown>({
-        path: `/pipelines/${args.id}/preview/disable`,
-        method: "POST",
-      });
-
-      if (!result.success) return formatError(result.error, "pipeline");
+      if (!result.success) return formatError(result.error, "object storage object");
       return formatSuccess(result.data);
     }
   );

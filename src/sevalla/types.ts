@@ -65,6 +65,6 @@ export interface SevallaConfig {
   apiKey: string;
   /** Company UUID for list operations (optional) */
   companyId: string | undefined;
-  /** API base URL (defaults to https://api.sevalla.com/v2) */
+  /** API base URL (defaults to https://api.sevalla.com/v3) */
   baseUrl: string;
 }

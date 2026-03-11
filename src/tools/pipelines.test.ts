@@ -32,7 +32,15 @@ describe("Pipeline Tools", () => {
 
   it("should register all pipeline tools", () => {
     expect(ctx.tools.has("sevalla.pipelines.list")).toBe(true);
-    expect(ctx.tools.has("sevalla.pipelines.create-preview-app")).toBe(true);
+    expect(ctx.tools.has("sevalla.pipelines.get")).toBe(true);
+    expect(ctx.tools.has("sevalla.pipelines.create")).toBe(true);
+    expect(ctx.tools.has("sevalla.pipelines.update")).toBe(true);
+    expect(ctx.tools.has("sevalla.pipelines.delete")).toBe(true);
+    expect(ctx.tools.has("sevalla.pipelines.promote")).toBe(true);
+    expect(ctx.tools.has("sevalla.pipelines.stages.create")).toBe(true);
+    expect(ctx.tools.has("sevalla.pipelines.stages.delete")).toBe(true);
+    expect(ctx.tools.has("sevalla.pipelines.enable-preview")).toBe(true);
+    expect(ctx.tools.has("sevalla.pipelines.disable-preview")).toBe(true);
   });
 
   // ---------------------------------------------------------------------------
@@ -98,68 +106,357 @@ describe("Pipeline Tools", () => {
   });
 
   // ---------------------------------------------------------------------------
-  // sevalla.pipelines.create-preview-app
+  // sevalla.pipelines.get
   // ---------------------------------------------------------------------------
 
-  describe("sevalla.pipelines.create-preview-app", () => {
+  describe("sevalla.pipelines.get", () => {
     it("should handle auth failure", async () => {
       mockClientAuthFailure(mock);
-      const result = await ctx.callTool(
-        "sevalla.pipelines.create-preview-app",
-        {
-          id: "pipeline-uuid-1",
-        }
+      const result = await ctx.callTool("sevalla.pipelines.get", {
+        id: "pipeline-uuid-1",
+      });
+      expect(result).toHaveProperty("isError", true);
+    });
+
+    it("should handle API error", async () => {
+      mockClientSuccess(mock, ctx);
+      mockRequestError(ctx, "NOT_FOUND", "not found");
+      const result = await ctx.callTool("sevalla.pipelines.get", {
+        id: "pipeline-uuid-1",
+      });
+      expect(result).toHaveProperty("isError", true);
+    });
+
+    it("should return success", async () => {
+      mockClientSuccess(mock, ctx);
+      mockRequestSuccess(ctx, { id: "pipeline-uuid-1", name: "my-pipeline" });
+      const result = await ctx.callTool("sevalla.pipelines.get", {
+        id: "pipeline-uuid-1",
+      });
+      expect(result).not.toHaveProperty("isError");
+      expect(ctx.mockClient.request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          path: "/pipelines/pipeline-uuid-1",
+          method: "GET",
+        })
       );
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // sevalla.pipelines.create
+  // ---------------------------------------------------------------------------
+
+  describe("sevalla.pipelines.create", () => {
+    it("should handle auth failure", async () => {
+      mockClientAuthFailure(mock);
+      const result = await ctx.callTool("sevalla.pipelines.create", {
+        name: "Test Pipeline",
+      });
+      expect(result).toHaveProperty("isError", true);
+    });
+
+    it("should handle API error", async () => {
+      mockClientSuccess(mock, ctx);
+      mockRequestError(ctx, "VALIDATION_ERROR", "invalid");
+      const result = await ctx.callTool("sevalla.pipelines.create", {
+        name: "Test Pipeline",
+      });
+      expect(result).toHaveProperty("isError", true);
+    });
+
+    it("should return success with required fields", async () => {
+      mockClientSuccess(mock, ctx);
+      mockRequestSuccess(ctx, { id: "new-pipeline-uuid" });
+      const result = await ctx.callTool("sevalla.pipelines.create", {
+        name: "Test Pipeline",
+      });
+      expect(result).not.toHaveProperty("isError");
+      expect(ctx.mockClient.request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          path: "/pipelines",
+          method: "POST",
+          body: expect.objectContaining({
+            company: "default-company-id",
+            name: "Test Pipeline",
+          }),
+        })
+      );
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // sevalla.pipelines.update
+  // ---------------------------------------------------------------------------
+
+  describe("sevalla.pipelines.update", () => {
+    it("should handle auth failure", async () => {
+      mockClientAuthFailure(mock);
+      const result = await ctx.callTool("sevalla.pipelines.update", {
+        id: "pipeline-uuid-1",
+        name: "Updated",
+      });
       expect(result).toHaveProperty("isError", true);
     });
 
     it("should handle API error", async () => {
       mockClientSuccess(mock, ctx);
       mockRequestError(ctx, "SERVER_ERROR", "fail");
-      const result = await ctx.callTool(
-        "sevalla.pipelines.create-preview-app",
-        {
-          id: "pipeline-uuid-1",
-        }
-      );
+      const result = await ctx.callTool("sevalla.pipelines.update", {
+        id: "pipeline-uuid-1",
+        name: "Updated",
+      });
       expect(result).toHaveProperty("isError", true);
     });
 
-    it("should return success without optional branch", async () => {
+    it("should return success", async () => {
       mockClientSuccess(mock, ctx);
-      mockRequestSuccess(ctx, { id: "preview-app-uuid" });
-      const result = await ctx.callTool(
-        "sevalla.pipelines.create-preview-app",
-        {
-          id: "pipeline-uuid-1",
-        }
-      );
+      mockRequestSuccess(ctx, { id: "pipeline-uuid-1", name: "Updated" });
+      const result = await ctx.callTool("sevalla.pipelines.update", {
+        id: "pipeline-uuid-1",
+        name: "Updated",
+      });
       expect(result).not.toHaveProperty("isError");
       expect(ctx.mockClient.request).toHaveBeenCalledWith(
         expect.objectContaining({
-          path: "/pipelines/pipeline-uuid-1/create-preview-app",
-          method: "POST",
-          body: {},
+          path: "/pipelines/pipeline-uuid-1",
+          method: "PATCH",
+          body: { name: "Updated" },
         })
       );
     });
+  });
 
-    it("should pass optional branch in body", async () => {
+  // ---------------------------------------------------------------------------
+  // sevalla.pipelines.delete
+  // ---------------------------------------------------------------------------
+
+  describe("sevalla.pipelines.delete", () => {
+    it("should handle auth failure", async () => {
+      mockClientAuthFailure(mock);
+      const result = await ctx.callTool("sevalla.pipelines.delete", {
+        id: "pipeline-uuid-1",
+      });
+      expect(result).toHaveProperty("isError", true);
+    });
+
+    it("should handle API error", async () => {
       mockClientSuccess(mock, ctx);
-      mockRequestSuccess(ctx, { id: "preview-app-uuid" });
-      const result = await ctx.callTool(
-        "sevalla.pipelines.create-preview-app",
-        {
-          id: "pipeline-uuid-1",
-          branch: "feature-branch",
-        }
-      );
+      mockRequestError(ctx, "NOT_FOUND", "not found");
+      const result = await ctx.callTool("sevalla.pipelines.delete", {
+        id: "pipeline-uuid-1",
+      });
+      expect(result).toHaveProperty("isError", true);
+    });
+
+    it("should return success", async () => {
+      mockClientSuccess(mock, ctx);
+      mockRequestSuccess(ctx, { deleted: true });
+      const result = await ctx.callTool("sevalla.pipelines.delete", {
+        id: "pipeline-uuid-1",
+      });
       expect(result).not.toHaveProperty("isError");
       expect(ctx.mockClient.request).toHaveBeenCalledWith(
         expect.objectContaining({
-          path: "/pipelines/pipeline-uuid-1/create-preview-app",
+          path: "/pipelines/pipeline-uuid-1",
+          method: "DELETE",
+        })
+      );
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // sevalla.pipelines.promote
+  // ---------------------------------------------------------------------------
+
+  describe("sevalla.pipelines.promote", () => {
+    it("should handle auth failure", async () => {
+      mockClientAuthFailure(mock);
+      const result = await ctx.callTool("sevalla.pipelines.promote", {
+        id: "pipeline-uuid-1",
+      });
+      expect(result).toHaveProperty("isError", true);
+    });
+
+    it("should handle API error", async () => {
+      mockClientSuccess(mock, ctx);
+      mockRequestError(ctx, "SERVER_ERROR", "fail");
+      const result = await ctx.callTool("sevalla.pipelines.promote", {
+        id: "pipeline-uuid-1",
+      });
+      expect(result).toHaveProperty("isError", true);
+    });
+
+    it("should return success", async () => {
+      mockClientSuccess(mock, ctx);
+      mockRequestSuccess(ctx, { promoted: true });
+      const result = await ctx.callTool("sevalla.pipelines.promote", {
+        id: "pipeline-uuid-1",
+      });
+      expect(result).not.toHaveProperty("isError");
+      expect(ctx.mockClient.request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          path: "/pipelines/pipeline-uuid-1/promote",
           method: "POST",
-          body: { branch: "feature-branch" },
+        })
+      );
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // sevalla.pipelines.stages.create
+  // ---------------------------------------------------------------------------
+
+  describe("sevalla.pipelines.stages.create", () => {
+    it("should handle auth failure", async () => {
+      mockClientAuthFailure(mock);
+      const result = await ctx.callTool("sevalla.pipelines.stages.create", {
+        id: "pipeline-uuid-1",
+        name: "staging",
+      });
+      expect(result).toHaveProperty("isError", true);
+    });
+
+    it("should handle API error", async () => {
+      mockClientSuccess(mock, ctx);
+      mockRequestError(ctx, "VALIDATION_ERROR", "invalid");
+      const result = await ctx.callTool("sevalla.pipelines.stages.create", {
+        id: "pipeline-uuid-1",
+        name: "staging",
+      });
+      expect(result).toHaveProperty("isError", true);
+    });
+
+    it("should return success", async () => {
+      mockClientSuccess(mock, ctx);
+      mockRequestSuccess(ctx, { id: "stage-uuid-1" });
+      const result = await ctx.callTool("sevalla.pipelines.stages.create", {
+        id: "pipeline-uuid-1",
+        name: "staging",
+      });
+      expect(result).not.toHaveProperty("isError");
+      expect(ctx.mockClient.request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          path: "/pipelines/pipeline-uuid-1/stages",
+          method: "POST",
+          body: { name: "staging" },
+        })
+      );
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // sevalla.pipelines.stages.delete
+  // ---------------------------------------------------------------------------
+
+  describe("sevalla.pipelines.stages.delete", () => {
+    it("should handle auth failure", async () => {
+      mockClientAuthFailure(mock);
+      const result = await ctx.callTool("sevalla.pipelines.stages.delete", {
+        id: "pipeline-uuid-1",
+        stage_id: "stage-uuid-1",
+      });
+      expect(result).toHaveProperty("isError", true);
+    });
+
+    it("should handle API error", async () => {
+      mockClientSuccess(mock, ctx);
+      mockRequestError(ctx, "NOT_FOUND", "not found");
+      const result = await ctx.callTool("sevalla.pipelines.stages.delete", {
+        id: "pipeline-uuid-1",
+        stage_id: "stage-uuid-1",
+      });
+      expect(result).toHaveProperty("isError", true);
+    });
+
+    it("should return success", async () => {
+      mockClientSuccess(mock, ctx);
+      mockRequestSuccess(ctx, { deleted: true });
+      const result = await ctx.callTool("sevalla.pipelines.stages.delete", {
+        id: "pipeline-uuid-1",
+        stage_id: "stage-uuid-1",
+      });
+      expect(result).not.toHaveProperty("isError");
+      expect(ctx.mockClient.request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          path: "/pipelines/pipeline-uuid-1/stages/stage-uuid-1",
+          method: "DELETE",
+        })
+      );
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // sevalla.pipelines.enable-preview
+  // ---------------------------------------------------------------------------
+
+  describe("sevalla.pipelines.enable-preview", () => {
+    it("should handle auth failure", async () => {
+      mockClientAuthFailure(mock);
+      const result = await ctx.callTool("sevalla.pipelines.enable-preview", {
+        id: "pipeline-uuid-1",
+      });
+      expect(result).toHaveProperty("isError", true);
+    });
+
+    it("should handle API error", async () => {
+      mockClientSuccess(mock, ctx);
+      mockRequestError(ctx, "SERVER_ERROR", "fail");
+      const result = await ctx.callTool("sevalla.pipelines.enable-preview", {
+        id: "pipeline-uuid-1",
+      });
+      expect(result).toHaveProperty("isError", true);
+    });
+
+    it("should return success", async () => {
+      mockClientSuccess(mock, ctx);
+      mockRequestSuccess(ctx, { enabled: true });
+      const result = await ctx.callTool("sevalla.pipelines.enable-preview", {
+        id: "pipeline-uuid-1",
+      });
+      expect(result).not.toHaveProperty("isError");
+      expect(ctx.mockClient.request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          path: "/pipelines/pipeline-uuid-1/preview/enable",
+          method: "POST",
+        })
+      );
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // sevalla.pipelines.disable-preview
+  // ---------------------------------------------------------------------------
+
+  describe("sevalla.pipelines.disable-preview", () => {
+    it("should handle auth failure", async () => {
+      mockClientAuthFailure(mock);
+      const result = await ctx.callTool("sevalla.pipelines.disable-preview", {
+        id: "pipeline-uuid-1",
+      });
+      expect(result).toHaveProperty("isError", true);
+    });
+
+    it("should handle API error", async () => {
+      mockClientSuccess(mock, ctx);
+      mockRequestError(ctx, "SERVER_ERROR", "fail");
+      const result = await ctx.callTool("sevalla.pipelines.disable-preview", {
+        id: "pipeline-uuid-1",
+      });
+      expect(result).toHaveProperty("isError", true);
+    });
+
+    it("should return success", async () => {
+      mockClientSuccess(mock, ctx);
+      mockRequestSuccess(ctx, { disabled: true });
+      const result = await ctx.callTool("sevalla.pipelines.disable-preview", {
+        id: "pipeline-uuid-1",
+      });
+      expect(result).not.toHaveProperty("isError");
+      expect(ctx.mockClient.request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          path: "/pipelines/pipeline-uuid-1/preview/disable",
+          method: "POST",
         })
       );
     });
