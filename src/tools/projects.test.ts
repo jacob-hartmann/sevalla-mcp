@@ -303,7 +303,10 @@ describe("Project Tools", () => {
 
     it("should send POST with body", async () => {
       mockClientSuccess(mock, ctx);
-      mockRequestSuccess(ctx, { id: "project-uuid-1", service_id: "service-uuid-1" });
+      mockRequestSuccess(ctx, {
+        id: "project-uuid-1",
+        service_id: "service-uuid-1",
+      });
       const result = await ctx.callTool("sevalla.projects.services.add", {
         id: "project-uuid-1",
         service_id: "service-uuid-1",

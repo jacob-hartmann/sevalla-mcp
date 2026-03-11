@@ -134,8 +134,7 @@ export function registerLogsMetricsTools(server: McpServer): void {
         params: params as Record<string, string>,
       });
 
-      if (!result.success)
-        return formatError(result.error, "deployment logs");
+      if (!result.success) return formatError(result.error, "deployment logs");
       return formatSuccess(result.data);
     }
   );

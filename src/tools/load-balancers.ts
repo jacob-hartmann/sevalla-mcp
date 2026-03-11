@@ -110,9 +110,7 @@ export function registerLoadBalancerTools(server: McpServer): void {
           .uuid()
           .optional()
           .describe("Company UUID (defaults to SEVALLA_COMPANY_ID env var)"),
-        display_name: z
-          .string()
-          .describe("Display name for the load balancer"),
+        display_name: z.string().describe("Display name for the load balancer"),
         location: z
           .string()
           .optional()
@@ -310,8 +308,7 @@ export function registerLoadBalancerTools(server: McpServer): void {
     "sevalla.load-balancers.destinations.toggle",
     {
       title: "Toggle Load Balancer Destination",
-      description:
-        "Toggle a destination on or off for a load balancer.",
+      description: "Toggle a destination on or off for a load balancer.",
       inputSchema: z.object({
         id: z.uuid().describe("Load balancer UUID"),
         dest_id: z.uuid().describe("Destination UUID to toggle"),

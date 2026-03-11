@@ -144,10 +144,7 @@ export function registerProjectTools(server: McpServer): void {
       description: "Update an existing project's configuration.",
       inputSchema: z.object({
         id: z.uuid().describe("Project UUID"),
-        name: z
-          .string()
-          .optional()
-          .describe("New name for the project"),
+        name: z.string().optional().describe("New name for the project"),
       }),
       outputSchema: sevallaOutputSchema,
       annotations: {

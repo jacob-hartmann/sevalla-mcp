@@ -374,30 +374,27 @@ describe("Object Storage Tools", () => {
   describe("sevalla.object-storage.objects.list", () => {
     it("should handle auth failure", async () => {
       mockClientAuthFailure(mock);
-      const result = await ctx.callTool(
-        "sevalla.object-storage.objects.list",
-        { id: "os-uuid-1" }
-      );
+      const result = await ctx.callTool("sevalla.object-storage.objects.list", {
+        id: "os-uuid-1",
+      });
       expect(result).toHaveProperty("isError", true);
     });
 
     it("should handle API error", async () => {
       mockClientSuccess(mock, ctx);
       mockRequestError(ctx, "SERVER_ERROR", "fail");
-      const result = await ctx.callTool(
-        "sevalla.object-storage.objects.list",
-        { id: "os-uuid-1" }
-      );
+      const result = await ctx.callTool("sevalla.object-storage.objects.list", {
+        id: "os-uuid-1",
+      });
       expect(result).toHaveProperty("isError", true);
     });
 
     it("should return success", async () => {
       mockClientSuccess(mock, ctx);
       mockRequestSuccess(ctx, { objects: [] });
-      const result = await ctx.callTool(
-        "sevalla.object-storage.objects.list",
-        { id: "os-uuid-1" }
-      );
+      const result = await ctx.callTool("sevalla.object-storage.objects.list", {
+        id: "os-uuid-1",
+      });
       expect(result).not.toHaveProperty("isError");
       expect(ctx.mockClient.request).toHaveBeenCalledWith(
         expect.objectContaining({

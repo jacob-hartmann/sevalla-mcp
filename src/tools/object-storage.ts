@@ -283,7 +283,8 @@ export function registerObjectStorageTools(server: McpServer): void {
         method: "GET",
       });
 
-      if (!result.success) return formatError(result.error, "object storage object");
+      if (!result.success)
+        return formatError(result.error, "object storage object");
       return formatSuccess(result.data);
     }
   );
@@ -297,9 +298,7 @@ export function registerObjectStorageTools(server: McpServer): void {
         "Delete objects from an object storage by their keys. This action cannot be undone.",
       inputSchema: z.object({
         id: z.uuid().describe("Object storage UUID"),
-        keys: z
-          .array(z.string())
-          .describe("Array of object keys to delete"),
+        keys: z.array(z.string()).describe("Array of object keys to delete"),
       }),
       outputSchema: sevallaOutputSchema,
       annotations: {
@@ -317,7 +316,8 @@ export function registerObjectStorageTools(server: McpServer): void {
         body: { keys: args.keys },
       });
 
-      if (!result.success) return formatError(result.error, "object storage object");
+      if (!result.success)
+        return formatError(result.error, "object storage object");
       return formatSuccess(result.data);
     }
   );

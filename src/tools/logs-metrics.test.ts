@@ -36,30 +36,27 @@ describe("Logs & Metrics Tools", () => {
   describe("sevalla.applications.logs.access", () => {
     it("should handle auth failure", async () => {
       mockClientAuthFailure(mock);
-      const result = await ctx.callTool(
-        "sevalla.applications.logs.access",
-        { app_id: "app-uuid-1" }
-      );
+      const result = await ctx.callTool("sevalla.applications.logs.access", {
+        app_id: "app-uuid-1",
+      });
       expect(result).toHaveProperty("isError", true);
     });
 
     it("should handle API error", async () => {
       mockClientSuccess(mock, ctx);
       mockRequestError(ctx, "SERVER_ERROR", "fail");
-      const result = await ctx.callTool(
-        "sevalla.applications.logs.access",
-        { app_id: "app-uuid-1" }
-      );
+      const result = await ctx.callTool("sevalla.applications.logs.access", {
+        app_id: "app-uuid-1",
+      });
       expect(result).toHaveProperty("isError", true);
     });
 
     it("should return success with correct path", async () => {
       mockClientSuccess(mock, ctx);
       mockRequestSuccess(ctx, { logs: [] });
-      const result = await ctx.callTool(
-        "sevalla.applications.logs.access",
-        { app_id: "app-uuid-1" }
-      );
+      const result = await ctx.callTool("sevalla.applications.logs.access", {
+        app_id: "app-uuid-1",
+      });
       expect(result).not.toHaveProperty("isError");
       expect(ctx.mockClient.request).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -91,30 +88,27 @@ describe("Logs & Metrics Tools", () => {
   describe("sevalla.applications.logs.runtime", () => {
     it("should handle auth failure", async () => {
       mockClientAuthFailure(mock);
-      const result = await ctx.callTool(
-        "sevalla.applications.logs.runtime",
-        { app_id: "app-uuid-1" }
-      );
+      const result = await ctx.callTool("sevalla.applications.logs.runtime", {
+        app_id: "app-uuid-1",
+      });
       expect(result).toHaveProperty("isError", true);
     });
 
     it("should handle API error", async () => {
       mockClientSuccess(mock, ctx);
       mockRequestError(ctx, "SERVER_ERROR", "fail");
-      const result = await ctx.callTool(
-        "sevalla.applications.logs.runtime",
-        { app_id: "app-uuid-1" }
-      );
+      const result = await ctx.callTool("sevalla.applications.logs.runtime", {
+        app_id: "app-uuid-1",
+      });
       expect(result).toHaveProperty("isError", true);
     });
 
     it("should return success with correct path", async () => {
       mockClientSuccess(mock, ctx);
       mockRequestSuccess(ctx, { logs: [] });
-      const result = await ctx.callTool(
-        "sevalla.applications.logs.runtime",
-        { app_id: "app-uuid-1" }
-      );
+      const result = await ctx.callTool("sevalla.applications.logs.runtime", {
+        app_id: "app-uuid-1",
+      });
       expect(result).not.toHaveProperty("isError");
       expect(ctx.mockClient.request).toHaveBeenCalledWith(
         expect.objectContaining({

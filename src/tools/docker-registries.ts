@@ -64,8 +64,7 @@ export function registerDockerRegistryTools(server: McpServer): void {
         params: params as Record<string, string>,
       });
 
-      if (!result.success)
-        return formatError(result.error, "docker registry");
+      if (!result.success) return formatError(result.error, "docker registry");
       return formatSuccess(result.data);
     }
   );
@@ -95,8 +94,7 @@ export function registerDockerRegistryTools(server: McpServer): void {
         method: "GET",
       });
 
-      if (!result.success)
-        return formatError(result.error, "docker registry");
+      if (!result.success) return formatError(result.error, "docker registry");
       return formatSuccess(result.data);
     }
   );
@@ -139,8 +137,7 @@ export function registerDockerRegistryTools(server: McpServer): void {
         body,
       });
 
-      if (!result.success)
-        return formatError(result.error, "docker registry");
+      if (!result.success) return formatError(result.error, "docker registry");
       return formatSuccess(result.data);
     }
   );
@@ -176,8 +173,7 @@ export function registerDockerRegistryTools(server: McpServer): void {
         body,
       });
 
-      if (!result.success)
-        return formatError(result.error, "docker registry");
+      if (!result.success) return formatError(result.error, "docker registry");
       return formatSuccess(result.data);
     }
   );
@@ -208,8 +204,7 @@ export function registerDockerRegistryTools(server: McpServer): void {
         method: "DELETE",
       });
 
-      if (!result.success)
-        return formatError(result.error, "docker registry");
+      if (!result.success) return formatError(result.error, "docker registry");
       return formatSuccess(result.data);
     }
   );

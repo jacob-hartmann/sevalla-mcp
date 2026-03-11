@@ -136,8 +136,7 @@ export function registerAppDomainTools(server: McpServer): void {
     "sevalla.applications.domains.refresh-status",
     {
       title: "Refresh Domain Status",
-      description:
-        "Refresh the DNS/SSL verification status of a domain.",
+      description: "Refresh the DNS/SSL verification status of a domain.",
       inputSchema: z.object({
         app_id: z.uuid().describe("Application UUID"),
         domain_id: z.uuid().describe("Domain UUID"),

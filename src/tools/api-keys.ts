@@ -91,7 +91,8 @@ export function registerApiKeyTools(server: McpServer): void {
     "sevalla.api-keys.create",
     {
       title: "Create API Key",
-      description: "Create a new API key with specified roles and capabilities.",
+      description:
+        "Create a new API key with specified roles and capabilities.",
       inputSchema: z.object({
         company: z
           .uuid()

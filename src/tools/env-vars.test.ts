@@ -37,30 +37,27 @@ describe("Environment Variable Tools", () => {
   describe("sevalla.applications.env-vars.list", () => {
     it("should handle auth failure", async () => {
       mockClientAuthFailure(mock);
-      const result = await ctx.callTool(
-        "sevalla.applications.env-vars.list",
-        { app_id: "app-uuid-1" }
-      );
+      const result = await ctx.callTool("sevalla.applications.env-vars.list", {
+        app_id: "app-uuid-1",
+      });
       expect(result).toHaveProperty("isError", true);
     });
 
     it("should handle API error", async () => {
       mockClientSuccess(mock, ctx);
       mockRequestError(ctx, "SERVER_ERROR", "fail");
-      const result = await ctx.callTool(
-        "sevalla.applications.env-vars.list",
-        { app_id: "app-uuid-1" }
-      );
+      const result = await ctx.callTool("sevalla.applications.env-vars.list", {
+        app_id: "app-uuid-1",
+      });
       expect(result).toHaveProperty("isError", true);
     });
 
     it("should return success with correct path", async () => {
       mockClientSuccess(mock, ctx);
       mockRequestSuccess(ctx, { env_vars: [] });
-      const result = await ctx.callTool(
-        "sevalla.applications.env-vars.list",
-        { app_id: "app-uuid-1" }
-      );
+      const result = await ctx.callTool("sevalla.applications.env-vars.list", {
+        app_id: "app-uuid-1",
+      });
       expect(result).not.toHaveProperty("isError");
       expect(ctx.mockClient.request).toHaveBeenCalledWith(
         expect.objectContaining({
