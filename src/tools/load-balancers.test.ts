@@ -59,6 +59,13 @@ describe("Load Balancer Tools", () => {
       expect(result).toHaveProperty("isError", true);
     });
 
+    it("should return error when no company ID is available", async () => {
+      mockGetCompanyId.mockReturnValue(undefined);
+      mockClientSuccess(mock, ctx);
+      const result = await ctx.callTool("sevalla.load-balancers.list", {});
+      expect(result).toHaveProperty("isError", true);
+    });
+
     it("should handle API error", async () => {
       mockClientSuccess(mock, ctx);
       mockRequestError(ctx, "SERVER_ERROR", "fail");
@@ -155,6 +162,15 @@ describe("Load Balancer Tools", () => {
   describe("sevalla.load-balancers.create", () => {
     it("should handle auth failure", async () => {
       mockClientAuthFailure(mock);
+      const result = await ctx.callTool("sevalla.load-balancers.create", {
+        display_name: "Test LB",
+      });
+      expect(result).toHaveProperty("isError", true);
+    });
+
+    it("should return error when no company ID is available", async () => {
+      mockGetCompanyId.mockReturnValue(undefined);
+      mockClientSuccess(mock, ctx);
       const result = await ctx.callTool("sevalla.load-balancers.create", {
         display_name: "Test LB",
       });

@@ -53,6 +53,13 @@ describe("Object Storage Tools", () => {
       expect(result).toHaveProperty("isError", true);
     });
 
+    it("should return error when no company ID is available", async () => {
+      mockGetCompanyId.mockReturnValue(undefined);
+      mockClientSuccess(mock, ctx);
+      const result = await ctx.callTool("sevalla.object-storage.list", {});
+      expect(result).toHaveProperty("isError", true);
+    });
+
     it("should handle API error", async () => {
       mockClientSuccess(mock, ctx);
       mockRequestError(ctx, "SERVER_ERROR", "fail");
@@ -149,6 +156,15 @@ describe("Object Storage Tools", () => {
   describe("sevalla.object-storage.create", () => {
     it("should handle auth failure", async () => {
       mockClientAuthFailure(mock);
+      const result = await ctx.callTool("sevalla.object-storage.create", {
+        display_name: "Test Storage",
+      });
+      expect(result).toHaveProperty("isError", true);
+    });
+
+    it("should return error when no company ID is available", async () => {
+      mockGetCompanyId.mockReturnValue(undefined);
+      mockClientSuccess(mock, ctx);
       const result = await ctx.callTool("sevalla.object-storage.create", {
         display_name: "Test Storage",
       });

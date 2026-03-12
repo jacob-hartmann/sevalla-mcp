@@ -52,6 +52,13 @@ describe("Static Site Tools", () => {
       expect(result).toHaveProperty("isError", true);
     });
 
+    it("should return error when no company ID is available", async () => {
+      mockGetCompanyId.mockReturnValue(undefined);
+      mockClientSuccess(mock, ctx);
+      const result = await ctx.callTool("sevalla.static-sites.list", {});
+      expect(result).toHaveProperty("isError", true);
+    });
+
     it("should handle API error", async () => {
       mockClientSuccess(mock, ctx);
       mockRequestError(ctx, "SERVER_ERROR", "fail");
@@ -327,6 +334,17 @@ describe("Static Site Tools", () => {
   describe("sevalla.static-sites.create", () => {
     it("should handle auth failure", async () => {
       mockClientAuthFailure(mock);
+      const result = await ctx.callTool("sevalla.static-sites.create", {
+        display_name: "Test Site",
+        repository: "https://github.com/test/repo",
+        branch: "main",
+      });
+      expect(result).toHaveProperty("isError", true);
+    });
+
+    it("should return error when no company ID is available", async () => {
+      mockGetCompanyId.mockReturnValue(undefined);
+      mockClientSuccess(mock, ctx);
       const result = await ctx.callTool("sevalla.static-sites.create", {
         display_name: "Test Site",
         repository: "https://github.com/test/repo",

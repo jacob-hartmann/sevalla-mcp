@@ -54,6 +54,13 @@ describe("Pipeline Tools", () => {
       expect(result).toHaveProperty("isError", true);
     });
 
+    it("should return error when no company ID is available", async () => {
+      mockGetCompanyId.mockReturnValue(undefined);
+      mockClientSuccess(mock, ctx);
+      const result = await ctx.callTool("sevalla.pipelines.list", {});
+      expect(result).toHaveProperty("isError", true);
+    });
+
     it("should handle API error", async () => {
       mockClientSuccess(mock, ctx);
       mockRequestError(ctx, "SERVER_ERROR", "fail");
@@ -150,6 +157,15 @@ describe("Pipeline Tools", () => {
   describe("sevalla.pipelines.create", () => {
     it("should handle auth failure", async () => {
       mockClientAuthFailure(mock);
+      const result = await ctx.callTool("sevalla.pipelines.create", {
+        name: "Test Pipeline",
+      });
+      expect(result).toHaveProperty("isError", true);
+    });
+
+    it("should return error when no company ID is available", async () => {
+      mockGetCompanyId.mockReturnValue(undefined);
+      mockClientSuccess(mock, ctx);
       const result = await ctx.callTool("sevalla.pipelines.create", {
         name: "Test Pipeline",
       });

@@ -5,10 +5,11 @@ vi.mock("../sevalla/client-factory.js", () => ({
 }));
 
 vi.mock("../sevalla/auth.js", () => ({
-  getCompanyId: vi.fn().mockReturnValue("company-uuid-1"),
+  getCompanyId: vi.fn(),
 }));
 
 import { getSevallaClient } from "../sevalla/client-factory.js";
+import { getCompanyId } from "../sevalla/auth.js";
 import { registerWebhookTools } from "./webhooks.js";
 import {
   createToolTestContext,
@@ -21,9 +22,11 @@ import {
 describe("Webhook Tools", () => {
   const ctx = createToolTestContext();
   const mock = getSevallaClient as ReturnType<typeof vi.fn>;
+  const mockGetCompanyId = getCompanyId as ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockGetCompanyId.mockReturnValue("company-uuid-1");
     registerWebhookTools(ctx.server);
   });
 
@@ -46,6 +49,13 @@ describe("Webhook Tools", () => {
   describe("sevalla.webhooks.list", () => {
     it("should handle auth failure", async () => {
       mockClientAuthFailure(mock);
+      const result = await ctx.callTool("sevalla.webhooks.list", {});
+      expect(result).toHaveProperty("isError", true);
+    });
+
+    it("should return error when no company ID is available", async () => {
+      mockGetCompanyId.mockReturnValue(undefined);
+      mockClientSuccess(mock, ctx);
       const result = await ctx.callTool("sevalla.webhooks.list", {});
       expect(result).toHaveProperty("isError", true);
     });
@@ -150,6 +160,16 @@ describe("Webhook Tools", () => {
   describe("sevalla.webhooks.create", () => {
     it("should handle auth failure", async () => {
       mockClientAuthFailure(mock);
+      const result = await ctx.callTool("sevalla.webhooks.create", {
+        url: "https://example.com/hook",
+        events: ["deployment.started"],
+      });
+      expect(result).toHaveProperty("isError", true);
+    });
+
+    it("should return error when no company ID is available", async () => {
+      mockGetCompanyId.mockReturnValue(undefined);
+      mockClientSuccess(mock, ctx);
       const result = await ctx.callTool("sevalla.webhooks.create", {
         url: "https://example.com/hook",
         events: ["deployment.started"],
