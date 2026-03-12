@@ -47,6 +47,18 @@ describe("API Key Tools", () => {
       expect(result).toHaveProperty("isError", true);
     });
 
+    it("should return clear error when no company ID is available", async () => {
+      mockGetCompanyId.mockReturnValue(undefined);
+      mockClientSuccess(mock, ctx);
+      const result = await ctx.callTool("sevalla.api-keys.list", {});
+      expect(result).toHaveProperty("isError", true);
+      expect(result).toHaveProperty(
+        "content.0.text",
+        expect.stringContaining("SEVALLA_COMPANY_ID")
+      );
+      expect(ctx.mockClient.request).not.toHaveBeenCalled();
+    });
+
     it("should handle API error", async () => {
       mockClientSuccess(mock, ctx);
       mockRequestError(ctx, "SERVER_ERROR", "fail");
@@ -110,6 +122,20 @@ describe("API Key Tools", () => {
         name: "My Key",
       });
       expect(result).toHaveProperty("isError", true);
+    });
+
+    it("should return clear error when no company ID is available", async () => {
+      mockGetCompanyId.mockReturnValue(undefined);
+      mockClientSuccess(mock, ctx);
+      const result = await ctx.callTool("sevalla.api-keys.create", {
+        name: "My Key",
+      });
+      expect(result).toHaveProperty("isError", true);
+      expect(result).toHaveProperty(
+        "content.0.text",
+        expect.stringContaining("SEVALLA_COMPANY_ID")
+      );
+      expect(ctx.mockClient.request).not.toHaveBeenCalled();
     });
 
     it("should handle API error", async () => {

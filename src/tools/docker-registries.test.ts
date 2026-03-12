@@ -45,6 +45,18 @@ describe("Docker Registry Tools", () => {
       expect(result).toHaveProperty("isError", true);
     });
 
+    it("should return clear error when no company ID is available", async () => {
+      mockGetCompanyId.mockReturnValue(undefined);
+      mockClientSuccess(mock, ctx);
+      const result = await ctx.callTool("sevalla.docker-registries.list", {});
+      expect(result).toHaveProperty("isError", true);
+      expect(result).toHaveProperty(
+        "content.0.text",
+        expect.stringContaining("SEVALLA_COMPANY_ID")
+      );
+      expect(ctx.mockClient.request).not.toHaveBeenCalled();
+    });
+
     it("should handle API error", async () => {
       mockClientSuccess(mock, ctx);
       mockRequestError(ctx, "SERVER_ERROR", "fail");
@@ -111,6 +123,23 @@ describe("Docker Registry Tools", () => {
         password: "pass",
       });
       expect(result).toHaveProperty("isError", true);
+    });
+
+    it("should return clear error when no company ID is available", async () => {
+      mockGetCompanyId.mockReturnValue(undefined);
+      mockClientSuccess(mock, ctx);
+      const result = await ctx.callTool("sevalla.docker-registries.create", {
+        display_name: "My Registry",
+        registry_url: "https://registry.example.com",
+        username: "user",
+        password: "pass",
+      });
+      expect(result).toHaveProperty("isError", true);
+      expect(result).toHaveProperty(
+        "content.0.text",
+        expect.stringContaining("SEVALLA_COMPANY_ID")
+      );
+      expect(ctx.mockClient.request).not.toHaveBeenCalled();
     });
 
     it("should handle API error", async () => {

@@ -9,6 +9,7 @@ vi.mock("../sevalla/auth.js", () => ({
 }));
 
 import { getSevallaClient } from "../sevalla/client-factory.js";
+import { getCompanyId } from "../sevalla/auth.js";
 import { registerApplicationTools } from "./applications.js";
 import {
   createToolTestContext,
@@ -21,9 +22,11 @@ import {
 describe("Application Tools", () => {
   const ctx = createToolTestContext();
   const mock = getSevallaClient as ReturnType<typeof vi.fn>;
+  const mockGetCompanyId = getCompanyId as ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockGetCompanyId.mockReturnValue("company-uuid-1");
     registerApplicationTools(ctx.server);
   });
 
@@ -165,6 +168,22 @@ describe("Application Tools", () => {
         branch: "main",
       });
       expect(result).toHaveProperty("isError", true);
+    });
+
+    it("should return clear error when no company ID is available", async () => {
+      mockGetCompanyId.mockReturnValue(undefined);
+      mockClientSuccess(mock, ctx);
+      const result = await ctx.callTool("sevalla.applications.create", {
+        display_name: "New App",
+        repository: "https://github.com/org/repo",
+        branch: "main",
+      });
+      expect(result).toHaveProperty("isError", true);
+      expect(result).toHaveProperty(
+        "content.0.text",
+        expect.stringContaining("SEVALLA_COMPANY_ID")
+      );
+      expect(ctx.mockClient.request).not.toHaveBeenCalled();
     });
 
     it("should send POST with body", async () => {
