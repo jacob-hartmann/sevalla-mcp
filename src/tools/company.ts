@@ -12,6 +12,7 @@ import {
   formatAuthError,
   formatError,
   formatSuccess,
+  buildParams,
   sevallaOutputSchema,
 } from "./utils.js";
 
@@ -23,7 +24,7 @@ export function registerCompanyTools(server: McpServer): void {
       title: "List Company Users",
       description: "List all users for a company.",
       inputSchema: z.object({
-        id: z
+        company: z
           .uuid()
           .optional()
           .describe("Company UUID (defaults to SEVALLA_COMPANY_ID env var)"),
@@ -39,56 +40,20 @@ export function registerCompanyTools(server: McpServer): void {
       const clientResult = getSevallaClient(extra);
       if (!clientResult.success) return formatAuthError(clientResult.error);
 
-      const companyId = args.id ?? getCompanyId();
+      const companyId = args.company ?? getCompanyId();
       if (!companyId) {
         return formatAuthError(
-          "SEVALLA_COMPANY_ID environment variable is required when no company ID is provided."
+          "No company ID provided. Pass 'company' or set SEVALLA_COMPANY_ID."
         );
       }
-
-      const result = await clientResult.client.request<unknown>({
-        path: `/company/${companyId}/users`,
-        method: "GET",
+      const params = buildParams({
+        company: companyId,
       });
 
-      if (!result.success) return formatError(result.error, "company");
-      return formatSuccess(result.data);
-    }
-  );
-
-  // sevalla.company.usage
-  server.registerTool(
-    "sevalla.company.usage",
-    {
-      title: "Get Company Usage",
-      description: "Get PaaS usage information for a company.",
-      inputSchema: z.object({
-        id: z
-          .uuid()
-          .optional()
-          .describe("Company UUID (defaults to SEVALLA_COMPANY_ID env var)"),
-      }),
-      outputSchema: sevallaOutputSchema,
-      annotations: {
-        readOnlyHint: true,
-        idempotentHint: true,
-        openWorldHint: true,
-      },
-    },
-    async (args, extra) => {
-      const clientResult = getSevallaClient(extra);
-      if (!clientResult.success) return formatAuthError(clientResult.error);
-
-      const companyId = args.id ?? getCompanyId();
-      if (!companyId) {
-        return formatAuthError(
-          "SEVALLA_COMPANY_ID environment variable is required when no company ID is provided."
-        );
-      }
-
       const result = await clientResult.client.request<unknown>({
-        path: `/company/${companyId}/paas-usage`,
+        path: "/users",
         method: "GET",
+        params: params as Record<string, string>,
       });
 
       if (!result.success) return formatError(result.error, "company");

@@ -6,7 +6,7 @@
  * Authentication is Bearer token-based:
  *   - SEVALLA_API_KEY (required) - Bearer token for API access
  *   - SEVALLA_COMPANY_ID (optional) - Company UUID for list operations
- *   - SEVALLA_API_BASE_URL (optional, defaults to https://api.sevalla.com/v2)
+ *   - SEVALLA_API_BASE_URL (optional, defaults to https://api.sevalla.com/v3)
  */
 
 import { SEVALLA_API_BASE_URL } from "../constants.js";

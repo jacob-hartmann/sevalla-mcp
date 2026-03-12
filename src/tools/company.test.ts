@@ -32,7 +32,6 @@ describe("Company Tools", () => {
 
   it("should register all company tools", () => {
     expect(ctx.tools.has("sevalla.company.users")).toBe(true);
-    expect(ctx.tools.has("sevalla.company.usage")).toBe(true);
   });
 
   // ---------------------------------------------------------------------------
@@ -42,6 +41,13 @@ describe("Company Tools", () => {
   describe("sevalla.company.users", () => {
     it("should handle auth failure", async () => {
       mockClientAuthFailure(mock);
+      const result = await ctx.callTool("sevalla.company.users", {});
+      expect(result).toHaveProperty("isError", true);
+    });
+
+    it("should return error when no company ID is available", async () => {
+      mockGetCompanyId.mockReturnValue(undefined);
+      mockClientSuccess(mock, ctx);
       const result = await ctx.callTool("sevalla.company.users", {});
       expect(result).toHaveProperty("isError", true);
     });
@@ -60,99 +66,25 @@ describe("Company Tools", () => {
       expect(result).not.toHaveProperty("isError");
       expect(ctx.mockClient.request).toHaveBeenCalledWith(
         expect.objectContaining({
-          path: "/company/default-company-id/users",
+          path: "/users",
           method: "GET",
+          params: { company: "default-company-id" },
         })
       );
     });
 
-    it("should use provided id over default", async () => {
+    it("should use provided company over default", async () => {
       mockClientSuccess(mock, ctx);
       mockRequestSuccess(ctx, { users: [] });
       const result = await ctx.callTool("sevalla.company.users", {
-        id: "custom-company-id",
+        company: "custom-company-id",
       });
       expect(result).not.toHaveProperty("isError");
       expect(ctx.mockClient.request).toHaveBeenCalledWith(
         expect.objectContaining({
-          path: "/company/custom-company-id/users",
-          method: "GET",
+          path: "/users",
+          params: expect.objectContaining({ company: "custom-company-id" }),
         })
-      );
-    });
-
-    it("should return auth error when no company ID is available", async () => {
-      mockGetCompanyId.mockReturnValue(undefined);
-      mockClientSuccess(mock, ctx);
-      const result = await ctx.callTool("sevalla.company.users", {});
-      expect(result).toHaveProperty("isError", true);
-      expect((result as Record<string, unknown[]>)["content"]).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            text: expect.stringContaining("SEVALLA_COMPANY_ID"),
-          }),
-        ])
-      );
-    });
-  });
-
-  // ---------------------------------------------------------------------------
-  // sevalla.company.usage
-  // ---------------------------------------------------------------------------
-
-  describe("sevalla.company.usage", () => {
-    it("should handle auth failure", async () => {
-      mockClientAuthFailure(mock);
-      const result = await ctx.callTool("sevalla.company.usage", {});
-      expect(result).toHaveProperty("isError", true);
-    });
-
-    it("should handle API error", async () => {
-      mockClientSuccess(mock, ctx);
-      mockRequestError(ctx, "SERVER_ERROR", "fail");
-      const result = await ctx.callTool("sevalla.company.usage", {});
-      expect(result).toHaveProperty("isError", true);
-    });
-
-    it("should return success with default company", async () => {
-      mockClientSuccess(mock, ctx);
-      mockRequestSuccess(ctx, { usage: { cpu: 50 } });
-      const result = await ctx.callTool("sevalla.company.usage", {});
-      expect(result).not.toHaveProperty("isError");
-      expect(ctx.mockClient.request).toHaveBeenCalledWith(
-        expect.objectContaining({
-          path: "/company/default-company-id/paas-usage",
-          method: "GET",
-        })
-      );
-    });
-
-    it("should use provided id over default", async () => {
-      mockClientSuccess(mock, ctx);
-      mockRequestSuccess(ctx, { usage: {} });
-      const result = await ctx.callTool("sevalla.company.usage", {
-        id: "custom-company-id",
-      });
-      expect(result).not.toHaveProperty("isError");
-      expect(ctx.mockClient.request).toHaveBeenCalledWith(
-        expect.objectContaining({
-          path: "/company/custom-company-id/paas-usage",
-          method: "GET",
-        })
-      );
-    });
-
-    it("should return auth error when no company ID is available", async () => {
-      mockGetCompanyId.mockReturnValue(undefined);
-      mockClientSuccess(mock, ctx);
-      const result = await ctx.callTool("sevalla.company.usage", {});
-      expect(result).toHaveProperty("isError", true);
-      expect((result as Record<string, unknown[]>)["content"]).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            text: expect.stringContaining("SEVALLA_COMPANY_ID"),
-          }),
-        ])
       );
     });
   });

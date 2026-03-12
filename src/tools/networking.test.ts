@@ -24,22 +24,21 @@ describe("Networking Tools", () => {
   });
 
   it("should register all tools", () => {
-    expect(ctx.tools.has("sevalla.networking.clear-cache")).toBe(true);
+    expect(ctx.tools.has("sevalla.networking.purge-cache")).toBe(true);
     expect(ctx.tools.has("sevalla.networking.create-internal-connection")).toBe(
       true
     );
     expect(ctx.tools.has("sevalla.networking.toggle-cdn")).toBe(true);
-    expect(ctx.tools.has("sevalla.networking.toggle-edge-cache")).toBe(true);
   });
 
   // -------------------------------------------------------------------------
-  // sevalla.networking.clear-cache
+  // sevalla.networking.purge-cache
   // -------------------------------------------------------------------------
 
-  describe("sevalla.networking.clear-cache", () => {
+  describe("sevalla.networking.purge-cache", () => {
     it("should handle auth failure", async () => {
       mockClientAuthFailure(mock);
-      const result = await ctx.callTool("sevalla.networking.clear-cache", {
+      const result = await ctx.callTool("sevalla.networking.purge-cache", {
         id: "app-uuid-1",
       });
       expect(result).toHaveProperty("isError", true);
@@ -48,7 +47,7 @@ describe("Networking Tools", () => {
     it("should handle API error", async () => {
       mockClientSuccess(mock, ctx);
       mockRequestError(ctx, "SERVER_ERROR", "fail");
-      const result = await ctx.callTool("sevalla.networking.clear-cache", {
+      const result = await ctx.callTool("sevalla.networking.purge-cache", {
         id: "app-uuid-1",
       });
       expect(result).toHaveProperty("isError", true);
@@ -57,13 +56,13 @@ describe("Networking Tools", () => {
     it("should send POST to correct path", async () => {
       mockClientSuccess(mock, ctx);
       mockRequestSuccess(ctx, { cleared: true });
-      const result = await ctx.callTool("sevalla.networking.clear-cache", {
+      const result = await ctx.callTool("sevalla.networking.purge-cache", {
         id: "app-uuid-1",
       });
       expect(result).not.toHaveProperty("isError");
       expect(ctx.mockClient.request).toHaveBeenCalledWith(
         expect.objectContaining({
-          path: "/applications/app-uuid-1/clear-cache",
+          path: "/applications/app-uuid-1/purge-edge-cache",
           method: "POST",
         })
       );
@@ -176,48 +175,7 @@ describe("Networking Tools", () => {
       expect(result).not.toHaveProperty("isError");
       expect(ctx.mockClient.request).toHaveBeenCalledWith(
         expect.objectContaining({
-          path: "/applications/app-uuid-1/cdn/toggle-status",
-          method: "POST",
-        })
-      );
-    });
-  });
-
-  // -------------------------------------------------------------------------
-  // sevalla.networking.toggle-edge-cache
-  // -------------------------------------------------------------------------
-
-  describe("sevalla.networking.toggle-edge-cache", () => {
-    it("should handle auth failure", async () => {
-      mockClientAuthFailure(mock);
-      const result = await ctx.callTool(
-        "sevalla.networking.toggle-edge-cache",
-        { id: "app-uuid-1" }
-      );
-      expect(result).toHaveProperty("isError", true);
-    });
-
-    it("should handle API error", async () => {
-      mockClientSuccess(mock, ctx);
-      mockRequestError(ctx, "SERVER_ERROR", "fail");
-      const result = await ctx.callTool(
-        "sevalla.networking.toggle-edge-cache",
-        { id: "app-uuid-1" }
-      );
-      expect(result).toHaveProperty("isError", true);
-    });
-
-    it("should send POST to correct path", async () => {
-      mockClientSuccess(mock, ctx);
-      mockRequestSuccess(ctx, { edge_cache_enabled: true });
-      const result = await ctx.callTool(
-        "sevalla.networking.toggle-edge-cache",
-        { id: "app-uuid-1" }
-      );
-      expect(result).not.toHaveProperty("isError");
-      expect(ctx.mockClient.request).toHaveBeenCalledWith(
-        expect.objectContaining({
-          path: "/applications/app-uuid-1/edge-cache/toggle-status",
+          path: "/applications/app-uuid-1/toggle-cdn",
           method: "POST",
         })
       );

@@ -52,6 +52,11 @@ export function registerStaticSiteTools(server: McpServer): void {
       if (!clientResult.success) return formatAuthError(clientResult.error);
 
       const companyId = args.company ?? getCompanyId();
+      if (!companyId) {
+        return formatAuthError(
+          "No company ID provided. Pass 'company' or set SEVALLA_COMPANY_ID."
+        );
+      }
       const params = buildParams({
         company: companyId,
         limit: args.limit?.toString(),
@@ -99,6 +104,61 @@ export function registerStaticSiteTools(server: McpServer): void {
     }
   );
 
+  // sevalla.static-sites.create
+  server.registerTool(
+    "sevalla.static-sites.create",
+    {
+      title: "Create Static Site",
+      description: "Create a new static site.",
+      inputSchema: z.object({
+        company: z
+          .uuid()
+          .optional()
+          .describe("Company UUID (defaults to SEVALLA_COMPANY_ID env var)"),
+        display_name: z.string().describe("Display name for the static site"),
+        repository: z.string().describe("Git repository URL"),
+        branch: z.string().describe("Git branch to deploy"),
+        build_command: z.string().optional().describe("Build command"),
+        publish_directory: z.string().optional().describe("Publish directory"),
+        location: z
+          .string()
+          .optional()
+          .describe("Data center location identifier"),
+      }),
+      outputSchema: sevallaOutputSchema,
+      annotations: { openWorldHint: true },
+    },
+    async (args, extra) => {
+      const clientResult = getSevallaClient(extra);
+      if (!clientResult.success) return formatAuthError(clientResult.error);
+
+      const companyId = args.company ?? getCompanyId();
+      if (!companyId) {
+        return formatAuthError(
+          "No company ID provided. Pass 'company' or set SEVALLA_COMPANY_ID."
+        );
+      }
+      const body = buildParams({
+        company: companyId,
+        display_name: args.display_name,
+        repository: args.repository,
+        branch: args.branch,
+        build_command: args.build_command,
+        publish_directory: args.publish_directory,
+        location: args.location,
+      });
+
+      const result = await clientResult.client.request<unknown>({
+        path: "/static-sites",
+        method: "POST",
+        body,
+      });
+
+      if (!result.success) return formatError(result.error, "static site");
+      return formatSuccess(result.data);
+    }
+  );
+
   // sevalla.static-sites.update
   server.registerTool(
     "sevalla.static-sites.update",
@@ -122,7 +182,7 @@ export function registerStaticSiteTools(server: McpServer): void {
 
       const result = await clientResult.client.request<unknown>({
         path: `/static-sites/${args.id}`,
-        method: "PUT",
+        method: "PATCH",
         body,
       });
 
@@ -180,12 +240,11 @@ export function registerStaticSiteTools(server: McpServer): void {
       if (!clientResult.success) return formatAuthError(clientResult.error);
 
       const body = buildParams({
-        site_id: args.site_id,
         branch: args.branch,
       });
 
       const result = await clientResult.client.request<unknown>({
-        path: "/static-sites/deployments",
+        path: `/static-sites/${args.site_id}/deployments`,
         method: "POST",
         body,
       });
@@ -203,7 +262,8 @@ export function registerStaticSiteTools(server: McpServer): void {
       title: "Get Static Site Deployment",
       description: "Get details of a specific static site deployment.",
       inputSchema: z.object({
-        id: z.uuid().describe("Deployment UUID"),
+        site_id: z.uuid().describe("Static site UUID"),
+        deployment_id: z.uuid().describe("Deployment UUID"),
       }),
       outputSchema: sevallaOutputSchema,
       annotations: {
@@ -217,12 +277,38 @@ export function registerStaticSiteTools(server: McpServer): void {
       if (!clientResult.success) return formatAuthError(clientResult.error);
 
       const result = await clientResult.client.request<unknown>({
-        path: `/static-sites/deployments/${args.id}`,
+        path: `/static-sites/${args.site_id}/deployments/${args.deployment_id}`,
         method: "GET",
       });
 
       if (!result.success)
         return formatError(result.error, "static site deployment");
+      return formatSuccess(result.data);
+    }
+  );
+
+  // sevalla.static-sites.purge-cache
+  server.registerTool(
+    "sevalla.static-sites.purge-cache",
+    {
+      title: "Purge Static Site Cache",
+      description: "Purge the edge cache for a static site.",
+      inputSchema: z.object({
+        id: z.uuid().describe("Static site UUID"),
+      }),
+      outputSchema: sevallaOutputSchema,
+      annotations: { openWorldHint: true },
+    },
+    async (args, extra) => {
+      const clientResult = getSevallaClient(extra);
+      if (!clientResult.success) return formatAuthError(clientResult.error);
+
+      const result = await clientResult.client.request<unknown>({
+        path: `/static-sites/${args.id}/purge-edge-cache`,
+        method: "POST",
+      });
+
+      if (!result.success) return formatError(result.error, "static site");
       return formatSuccess(result.data);
     }
   );

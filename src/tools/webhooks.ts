@@ -1,7 +1,7 @@
 /**
- * Sevalla Application Tools
+ * Sevalla Webhook Tools
  *
- * Tools for managing Sevalla applications.
+ * Tools for managing Sevalla webhooks and event deliveries.
  */
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -16,13 +16,13 @@ import {
   sevallaOutputSchema,
 } from "./utils.js";
 
-export function registerApplicationTools(server: McpServer): void {
-  // sevalla.applications.list
+export function registerWebhookTools(server: McpServer): void {
+  // sevalla.webhooks.list
   server.registerTool(
-    "sevalla.applications.list",
+    "sevalla.webhooks.list",
     {
-      title: "List Applications",
-      description: "List all applications for a company.",
+      title: "List Webhooks",
+      description: "List all webhooks for a company.",
       inputSchema: z.object({
         company: z
           .uuid()
@@ -52,6 +52,11 @@ export function registerApplicationTools(server: McpServer): void {
       if (!clientResult.success) return formatAuthError(clientResult.error);
 
       const companyId = args.company ?? getCompanyId();
+      if (!companyId) {
+        return formatAuthError(
+          "No company ID provided. Pass 'company' or set SEVALLA_COMPANY_ID."
+        );
+      }
       const params = buildParams({
         company: companyId,
         limit: args.limit?.toString(),
@@ -59,24 +64,24 @@ export function registerApplicationTools(server: McpServer): void {
       });
 
       const result = await clientResult.client.request<unknown>({
-        path: "/applications",
+        path: "/webhooks",
         method: "GET",
         params: params as Record<string, string>,
       });
 
-      if (!result.success) return formatError(result.error, "application");
+      if (!result.success) return formatError(result.error, "webhook");
       return formatSuccess(result.data);
     }
   );
 
-  // sevalla.applications.get
+  // sevalla.webhooks.get
   server.registerTool(
-    "sevalla.applications.get",
+    "sevalla.webhooks.get",
     {
-      title: "Get Application",
-      description: "Get details of a specific application.",
+      title: "Get Webhook",
+      description: "Get details of a specific webhook.",
       inputSchema: z.object({
-        id: z.uuid().describe("Application UUID"),
+        id: z.uuid().describe("Webhook UUID"),
       }),
       outputSchema: sevallaOutputSchema,
       annotations: {
@@ -90,37 +95,30 @@ export function registerApplicationTools(server: McpServer): void {
       if (!clientResult.success) return formatAuthError(clientResult.error);
 
       const result = await clientResult.client.request<unknown>({
-        path: `/applications/${args.id}`,
+        path: `/webhooks/${args.id}`,
         method: "GET",
       });
 
-      if (!result.success) return formatError(result.error, "application");
+      if (!result.success) return formatError(result.error, "webhook");
       return formatSuccess(result.data);
     }
   );
 
-  // sevalla.applications.create
+  // sevalla.webhooks.create
   server.registerTool(
-    "sevalla.applications.create",
+    "sevalla.webhooks.create",
     {
-      title: "Create Application",
-      description: "Create a new application.",
+      title: "Create Webhook",
+      description: "Create a new webhook.",
       inputSchema: z.object({
         company: z
           .uuid()
           .optional()
           .describe("Company UUID (defaults to SEVALLA_COMPANY_ID env var)"),
-        display_name: z.string().describe("Display name for the application"),
-        repository: z.string().describe("Git repository URL"),
-        branch: z.string().describe("Git branch to deploy"),
-        build_type: z
-          .enum(["nixpacks", "buildpacks", "dockerfile"])
-          .optional()
-          .describe("Build type"),
-        location: z
-          .string()
-          .optional()
-          .describe("Data center location identifier"),
+        url: z.string().describe("Webhook endpoint URL"),
+        events: z
+          .array(z.string())
+          .describe("Array of event types to subscribe to"),
       }),
       outputSchema: sevallaOutputSchema,
       annotations: { openWorldHint: true },
@@ -137,75 +135,67 @@ export function registerApplicationTools(server: McpServer): void {
       }
       const body = buildParams({
         company: companyId,
-        display_name: args.display_name,
-        repository: args.repository,
-        branch: args.branch,
-        build_type: args.build_type,
-        location: args.location,
+        url: args.url,
+        events: args.events,
       });
 
       const result = await clientResult.client.request<unknown>({
-        path: "/applications",
+        path: "/webhooks",
         method: "POST",
         body,
       });
 
-      if (!result.success) return formatError(result.error, "application");
+      if (!result.success) return formatError(result.error, "webhook");
       return formatSuccess(result.data);
     }
   );
 
-  // sevalla.applications.update
+  // sevalla.webhooks.update
   server.registerTool(
-    "sevalla.applications.update",
+    "sevalla.webhooks.update",
     {
-      title: "Update Application",
-      description: "Update an existing application's configuration.",
+      title: "Update Webhook",
+      description: "Update an existing webhook's configuration.",
       inputSchema: z.object({
-        id: z.uuid().describe("Application UUID"),
-        display_name: z
-          .string()
+        id: z.uuid().describe("Webhook UUID"),
+        url: z.string().optional().describe("New webhook endpoint URL"),
+        events: z
+          .array(z.string())
           .optional()
-          .describe("New display name for the application"),
-        note: z
-          .string()
-          .optional()
-          .describe("Note or description for the application"),
+          .describe("New array of event types to subscribe to"),
       }),
       outputSchema: sevallaOutputSchema,
-      annotations: {
-        openWorldHint: true,
-      },
+      annotations: { openWorldHint: true },
     },
     async (args, extra) => {
       const clientResult = getSevallaClient(extra);
       if (!clientResult.success) return formatAuthError(clientResult.error);
 
       const body = buildParams({
-        display_name: args.display_name,
-        note: args.note,
+        url: args.url,
+        events: args.events,
       });
 
       const result = await clientResult.client.request<unknown>({
-        path: `/applications/${args.id}`,
+        path: `/webhooks/${args.id}`,
         method: "PATCH",
         body,
       });
 
-      if (!result.success) return formatError(result.error, "application");
+      if (!result.success) return formatError(result.error, "webhook");
       return formatSuccess(result.data);
     }
   );
 
-  // sevalla.applications.delete
+  // sevalla.webhooks.delete
   server.registerTool(
-    "sevalla.applications.delete",
+    "sevalla.webhooks.delete",
     {
-      title: "Delete Application",
+      title: "Delete Webhook",
       description:
-        "Permanently delete an application. This action cannot be undone.",
+        "Permanently delete a webhook. This action cannot be undone.",
       inputSchema: z.object({
-        id: z.uuid().describe("Application UUID"),
+        id: z.uuid().describe("Webhook UUID"),
       }),
       outputSchema: sevallaOutputSchema,
       annotations: {
@@ -219,23 +209,23 @@ export function registerApplicationTools(server: McpServer): void {
       if (!clientResult.success) return formatAuthError(clientResult.error);
 
       const result = await clientResult.client.request<unknown>({
-        path: `/applications/${args.id}`,
+        path: `/webhooks/${args.id}`,
         method: "DELETE",
       });
 
-      if (!result.success) return formatError(result.error, "application");
+      if (!result.success) return formatError(result.error, "webhook");
       return formatSuccess(result.data);
     }
   );
 
-  // sevalla.applications.activate
+  // sevalla.webhooks.toggle
   server.registerTool(
-    "sevalla.applications.activate",
+    "sevalla.webhooks.toggle",
     {
-      title: "Activate Application",
-      description: "Activate a suspended application.",
+      title: "Toggle Webhook",
+      description: "Toggle a webhook's enabled/disabled state.",
       inputSchema: z.object({
-        id: z.uuid().describe("Application UUID"),
+        id: z.uuid().describe("Webhook UUID"),
       }),
       outputSchema: sevallaOutputSchema,
       annotations: { openWorldHint: true },
@@ -245,23 +235,23 @@ export function registerApplicationTools(server: McpServer): void {
       if (!clientResult.success) return formatAuthError(clientResult.error);
 
       const result = await clientResult.client.request<unknown>({
-        path: `/applications/${args.id}/activate`,
+        path: `/webhooks/${args.id}/toggle`,
         method: "POST",
       });
 
-      if (!result.success) return formatError(result.error, "application");
+      if (!result.success) return formatError(result.error, "webhook");
       return formatSuccess(result.data);
     }
   );
 
-  // sevalla.applications.suspend
+  // sevalla.webhooks.roll-secret
   server.registerTool(
-    "sevalla.applications.suspend",
+    "sevalla.webhooks.roll-secret",
     {
-      title: "Suspend Application",
-      description: "Suspend a running application.",
+      title: "Roll Webhook Secret",
+      description: "Roll (regenerate) the signing secret for a webhook.",
       inputSchema: z.object({
-        id: z.uuid().describe("Application UUID"),
+        id: z.uuid().describe("Webhook UUID"),
       }),
       outputSchema: sevallaOutputSchema,
       annotations: { openWorldHint: true },
@@ -271,37 +261,74 @@ export function registerApplicationTools(server: McpServer): void {
       if (!clientResult.success) return formatAuthError(clientResult.error);
 
       const result = await clientResult.client.request<unknown>({
-        path: `/applications/${args.id}/suspend`,
+        path: `/webhooks/${args.id}/roll-secret`,
         method: "POST",
       });
 
-      if (!result.success) return formatError(result.error, "application");
+      if (!result.success) return formatError(result.error, "webhook");
       return formatSuccess(result.data);
     }
   );
 
-  // sevalla.applications.clone
+  // sevalla.webhooks.event-deliveries.list
   server.registerTool(
-    "sevalla.applications.clone",
+    "sevalla.webhooks.event-deliveries.list",
     {
-      title: "Clone Application",
-      description: "Clone an existing application.",
+      title: "List Webhook Event Deliveries",
+      description: "List event deliveries for a specific webhook.",
       inputSchema: z.object({
-        id: z.uuid().describe("Application UUID to clone"),
+        id: z.uuid().describe("Webhook UUID"),
       }),
       outputSchema: sevallaOutputSchema,
-      annotations: { openWorldHint: true },
+      annotations: {
+        readOnlyHint: true,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
     },
     async (args, extra) => {
       const clientResult = getSevallaClient(extra);
       if (!clientResult.success) return formatAuthError(clientResult.error);
 
       const result = await clientResult.client.request<unknown>({
-        path: `/applications/${args.id}/clone`,
-        method: "POST",
+        path: `/webhooks/${args.id}/event-deliveries`,
+        method: "GET",
       });
 
-      if (!result.success) return formatError(result.error, "application");
+      if (!result.success)
+        return formatError(result.error, "webhook event delivery");
+      return formatSuccess(result.data);
+    }
+  );
+
+  // sevalla.webhooks.event-deliveries.get
+  server.registerTool(
+    "sevalla.webhooks.event-deliveries.get",
+    {
+      title: "Get Webhook Event Delivery",
+      description: "Get details of a specific webhook event delivery.",
+      inputSchema: z.object({
+        id: z.uuid().describe("Webhook UUID"),
+        delivery_id: z.uuid().describe("Event delivery UUID"),
+      }),
+      outputSchema: sevallaOutputSchema,
+      annotations: {
+        readOnlyHint: true,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
+    },
+    async (args, extra) => {
+      const clientResult = getSevallaClient(extra);
+      if (!clientResult.success) return formatAuthError(clientResult.error);
+
+      const result = await clientResult.client.request<unknown>({
+        path: `/webhooks/${args.id}/event-deliveries/${args.delivery_id}`,
+        method: "GET",
+      });
+
+      if (!result.success)
+        return formatError(result.error, "webhook event delivery");
       return formatSuccess(result.data);
     }
   );

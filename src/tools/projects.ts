@@ -1,7 +1,7 @@
 /**
- * Sevalla Application Tools
+ * Sevalla Project Tools
  *
- * Tools for managing Sevalla applications.
+ * Tools for managing Sevalla projects.
  */
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -16,13 +16,13 @@ import {
   sevallaOutputSchema,
 } from "./utils.js";
 
-export function registerApplicationTools(server: McpServer): void {
-  // sevalla.applications.list
+export function registerProjectTools(server: McpServer): void {
+  // sevalla.projects.list
   server.registerTool(
-    "sevalla.applications.list",
+    "sevalla.projects.list",
     {
-      title: "List Applications",
-      description: "List all applications for a company.",
+      title: "List Projects",
+      description: "List all projects for a company.",
       inputSchema: z.object({
         company: z
           .uuid()
@@ -52,6 +52,11 @@ export function registerApplicationTools(server: McpServer): void {
       if (!clientResult.success) return formatAuthError(clientResult.error);
 
       const companyId = args.company ?? getCompanyId();
+      if (!companyId) {
+        return formatAuthError(
+          "No company ID provided. Pass 'company' or set SEVALLA_COMPANY_ID."
+        );
+      }
       const params = buildParams({
         company: companyId,
         limit: args.limit?.toString(),
@@ -59,24 +64,24 @@ export function registerApplicationTools(server: McpServer): void {
       });
 
       const result = await clientResult.client.request<unknown>({
-        path: "/applications",
+        path: "/projects",
         method: "GET",
         params: params as Record<string, string>,
       });
 
-      if (!result.success) return formatError(result.error, "application");
+      if (!result.success) return formatError(result.error, "project");
       return formatSuccess(result.data);
     }
   );
 
-  // sevalla.applications.get
+  // sevalla.projects.get
   server.registerTool(
-    "sevalla.applications.get",
+    "sevalla.projects.get",
     {
-      title: "Get Application",
-      description: "Get details of a specific application.",
+      title: "Get Project",
+      description: "Get details of a specific project.",
       inputSchema: z.object({
-        id: z.uuid().describe("Application UUID"),
+        id: z.uuid().describe("Project UUID"),
       }),
       outputSchema: sevallaOutputSchema,
       annotations: {
@@ -90,37 +95,27 @@ export function registerApplicationTools(server: McpServer): void {
       if (!clientResult.success) return formatAuthError(clientResult.error);
 
       const result = await clientResult.client.request<unknown>({
-        path: `/applications/${args.id}`,
+        path: `/projects/${args.id}`,
         method: "GET",
       });
 
-      if (!result.success) return formatError(result.error, "application");
+      if (!result.success) return formatError(result.error, "project");
       return formatSuccess(result.data);
     }
   );
 
-  // sevalla.applications.create
+  // sevalla.projects.create
   server.registerTool(
-    "sevalla.applications.create",
+    "sevalla.projects.create",
     {
-      title: "Create Application",
-      description: "Create a new application.",
+      title: "Create Project",
+      description: "Create a new project.",
       inputSchema: z.object({
         company: z
           .uuid()
           .optional()
           .describe("Company UUID (defaults to SEVALLA_COMPANY_ID env var)"),
-        display_name: z.string().describe("Display name for the application"),
-        repository: z.string().describe("Git repository URL"),
-        branch: z.string().describe("Git branch to deploy"),
-        build_type: z
-          .enum(["nixpacks", "buildpacks", "dockerfile"])
-          .optional()
-          .describe("Build type"),
-        location: z
-          .string()
-          .optional()
-          .describe("Data center location identifier"),
+        name: z.string().describe("Name for the project"),
       }),
       outputSchema: sevallaOutputSchema,
       annotations: { openWorldHint: true },
@@ -137,40 +132,29 @@ export function registerApplicationTools(server: McpServer): void {
       }
       const body = buildParams({
         company: companyId,
-        display_name: args.display_name,
-        repository: args.repository,
-        branch: args.branch,
-        build_type: args.build_type,
-        location: args.location,
+        name: args.name,
       });
 
       const result = await clientResult.client.request<unknown>({
-        path: "/applications",
+        path: "/projects",
         method: "POST",
         body,
       });
 
-      if (!result.success) return formatError(result.error, "application");
+      if (!result.success) return formatError(result.error, "project");
       return formatSuccess(result.data);
     }
   );
 
-  // sevalla.applications.update
+  // sevalla.projects.update
   server.registerTool(
-    "sevalla.applications.update",
+    "sevalla.projects.update",
     {
-      title: "Update Application",
-      description: "Update an existing application's configuration.",
+      title: "Update Project",
+      description: "Update an existing project's configuration.",
       inputSchema: z.object({
-        id: z.uuid().describe("Application UUID"),
-        display_name: z
-          .string()
-          .optional()
-          .describe("New display name for the application"),
-        note: z
-          .string()
-          .optional()
-          .describe("Note or description for the application"),
+        id: z.uuid().describe("Project UUID"),
+        name: z.string().optional().describe("New name for the project"),
       }),
       outputSchema: sevallaOutputSchema,
       annotations: {
@@ -182,30 +166,29 @@ export function registerApplicationTools(server: McpServer): void {
       if (!clientResult.success) return formatAuthError(clientResult.error);
 
       const body = buildParams({
-        display_name: args.display_name,
-        note: args.note,
+        name: args.name,
       });
 
       const result = await clientResult.client.request<unknown>({
-        path: `/applications/${args.id}`,
+        path: `/projects/${args.id}`,
         method: "PATCH",
         body,
       });
 
-      if (!result.success) return formatError(result.error, "application");
+      if (!result.success) return formatError(result.error, "project");
       return formatSuccess(result.data);
     }
   );
 
-  // sevalla.applications.delete
+  // sevalla.projects.delete
   server.registerTool(
-    "sevalla.applications.delete",
+    "sevalla.projects.delete",
     {
-      title: "Delete Application",
+      title: "Delete Project",
       description:
-        "Permanently delete an application. This action cannot be undone.",
+        "Permanently delete a project. This action cannot be undone.",
       inputSchema: z.object({
-        id: z.uuid().describe("Application UUID"),
+        id: z.uuid().describe("Project UUID"),
       }),
       outputSchema: sevallaOutputSchema,
       annotations: {
@@ -219,23 +202,25 @@ export function registerApplicationTools(server: McpServer): void {
       if (!clientResult.success) return formatAuthError(clientResult.error);
 
       const result = await clientResult.client.request<unknown>({
-        path: `/applications/${args.id}`,
+        path: `/projects/${args.id}`,
         method: "DELETE",
       });
 
-      if (!result.success) return formatError(result.error, "application");
+      if (!result.success) return formatError(result.error, "project");
       return formatSuccess(result.data);
     }
   );
 
-  // sevalla.applications.activate
+  // sevalla.projects.services.add
   server.registerTool(
-    "sevalla.applications.activate",
+    "sevalla.projects.services.add",
     {
-      title: "Activate Application",
-      description: "Activate a suspended application.",
+      title: "Add Service to Project",
+      description: "Add a service to an existing project.",
       inputSchema: z.object({
-        id: z.uuid().describe("Application UUID"),
+        id: z.uuid().describe("Project UUID"),
+        service_id: z.uuid().describe("Service UUID to add"),
+        service_type: z.string().describe("Type of the service"),
       }),
       outputSchema: sevallaOutputSchema,
       annotations: { openWorldHint: true },
@@ -244,64 +229,49 @@ export function registerApplicationTools(server: McpServer): void {
       const clientResult = getSevallaClient(extra);
       if (!clientResult.success) return formatAuthError(clientResult.error);
 
-      const result = await clientResult.client.request<unknown>({
-        path: `/applications/${args.id}/activate`,
-        method: "POST",
+      const body = buildParams({
+        service_id: args.service_id,
+        service_type: args.service_type,
       });
 
-      if (!result.success) return formatError(result.error, "application");
+      const result = await clientResult.client.request<unknown>({
+        path: `/projects/${args.id}/services`,
+        method: "POST",
+        body,
+      });
+
+      if (!result.success) return formatError(result.error, "project");
       return formatSuccess(result.data);
     }
   );
 
-  // sevalla.applications.suspend
+  // sevalla.projects.services.remove
   server.registerTool(
-    "sevalla.applications.suspend",
+    "sevalla.projects.services.remove",
     {
-      title: "Suspend Application",
-      description: "Suspend a running application.",
+      title: "Remove Service from Project",
+      description: "Remove a service from a project.",
       inputSchema: z.object({
-        id: z.uuid().describe("Application UUID"),
+        id: z.uuid().describe("Project UUID"),
+        service_id: z.uuid().describe("Service UUID to remove"),
       }),
       outputSchema: sevallaOutputSchema,
-      annotations: { openWorldHint: true },
+      annotations: {
+        destructiveHint: true,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
     },
     async (args, extra) => {
       const clientResult = getSevallaClient(extra);
       if (!clientResult.success) return formatAuthError(clientResult.error);
 
       const result = await clientResult.client.request<unknown>({
-        path: `/applications/${args.id}/suspend`,
-        method: "POST",
+        path: `/projects/${args.id}/services/${args.service_id}`,
+        method: "DELETE",
       });
 
-      if (!result.success) return formatError(result.error, "application");
-      return formatSuccess(result.data);
-    }
-  );
-
-  // sevalla.applications.clone
-  server.registerTool(
-    "sevalla.applications.clone",
-    {
-      title: "Clone Application",
-      description: "Clone an existing application.",
-      inputSchema: z.object({
-        id: z.uuid().describe("Application UUID to clone"),
-      }),
-      outputSchema: sevallaOutputSchema,
-      annotations: { openWorldHint: true },
-    },
-    async (args, extra) => {
-      const clientResult = getSevallaClient(extra);
-      if (!clientResult.success) return formatAuthError(clientResult.error);
-
-      const result = await clientResult.client.request<unknown>({
-        path: `/applications/${args.id}/clone`,
-        method: "POST",
-      });
-
-      if (!result.success) return formatError(result.error, "application");
+      if (!result.success) return formatError(result.error, "project");
       return formatSuccess(result.data);
     }
   );

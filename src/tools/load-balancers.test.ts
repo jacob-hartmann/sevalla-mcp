@@ -10,7 +10,7 @@ vi.mock("../sevalla/auth.js", () => ({
 
 import { getSevallaClient } from "../sevalla/client-factory.js";
 import { getCompanyId } from "../sevalla/auth.js";
-import { registerDatabaseTools } from "./databases.js";
+import { registerLoadBalancerTools } from "./load-balancers.js";
 import {
   createToolTestContext,
   mockClientSuccess,
@@ -19,7 +19,7 @@ import {
   mockRequestError,
 } from "./__test-helpers__/tool-test-utils.js";
 
-describe("Database Tools", () => {
+describe("Load Balancer Tools", () => {
   const ctx = createToolTestContext();
   const mock = getSevallaClient as ReturnType<typeof vi.fn>;
   const mockGetCompanyId = getCompanyId as ReturnType<typeof vi.fn>;
@@ -27,49 +27,60 @@ describe("Database Tools", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockGetCompanyId.mockReturnValue("default-company-id");
-    registerDatabaseTools(ctx.server);
+    registerLoadBalancerTools(ctx.server);
   });
 
-  it("should register all database tools", () => {
-    expect(ctx.tools.has("sevalla.databases.list")).toBe(true);
-    expect(ctx.tools.has("sevalla.databases.get")).toBe(true);
-    expect(ctx.tools.has("sevalla.databases.create")).toBe(true);
-    expect(ctx.tools.has("sevalla.databases.update")).toBe(true);
-    expect(ctx.tools.has("sevalla.databases.delete")).toBe(true);
-    expect(ctx.tools.has("sevalla.databases.activate")).toBe(true);
-    expect(ctx.tools.has("sevalla.databases.suspend")).toBe(true);
-    expect(ctx.tools.has("sevalla.databases.reset-password")).toBe(true);
-    expect(ctx.tools.has("sevalla.databases.backups.list")).toBe(true);
-    expect(ctx.tools.has("sevalla.databases.backups.create")).toBe(true);
-    expect(ctx.tools.has("sevalla.databases.backups.restore")).toBe(true);
+  it("should register all load balancer tools", () => {
+    expect(ctx.tools.has("sevalla.load-balancers.list")).toBe(true);
+    expect(ctx.tools.has("sevalla.load-balancers.get")).toBe(true);
+    expect(ctx.tools.has("sevalla.load-balancers.create")).toBe(true);
+    expect(ctx.tools.has("sevalla.load-balancers.update")).toBe(true);
+    expect(ctx.tools.has("sevalla.load-balancers.delete")).toBe(true);
+    expect(ctx.tools.has("sevalla.load-balancers.destinations.list")).toBe(
+      true
+    );
+    expect(ctx.tools.has("sevalla.load-balancers.destinations.add")).toBe(true);
+    expect(ctx.tools.has("sevalla.load-balancers.destinations.remove")).toBe(
+      true
+    );
+    expect(ctx.tools.has("sevalla.load-balancers.destinations.toggle")).toBe(
+      true
+    );
   });
 
   // ---------------------------------------------------------------------------
-  // sevalla.databases.list
+  // sevalla.load-balancers.list
   // ---------------------------------------------------------------------------
 
-  describe("sevalla.databases.list", () => {
+  describe("sevalla.load-balancers.list", () => {
     it("should handle auth failure", async () => {
       mockClientAuthFailure(mock);
-      const result = await ctx.callTool("sevalla.databases.list", {});
+      const result = await ctx.callTool("sevalla.load-balancers.list", {});
+      expect(result).toHaveProperty("isError", true);
+    });
+
+    it("should return error when no company ID is available", async () => {
+      mockGetCompanyId.mockReturnValue(undefined);
+      mockClientSuccess(mock, ctx);
+      const result = await ctx.callTool("sevalla.load-balancers.list", {});
       expect(result).toHaveProperty("isError", true);
     });
 
     it("should handle API error", async () => {
       mockClientSuccess(mock, ctx);
       mockRequestError(ctx, "SERVER_ERROR", "fail");
-      const result = await ctx.callTool("sevalla.databases.list", {});
+      const result = await ctx.callTool("sevalla.load-balancers.list", {});
       expect(result).toHaveProperty("isError", true);
     });
 
     it("should return success with default company", async () => {
       mockClientSuccess(mock, ctx);
-      mockRequestSuccess(ctx, { databases: [] });
-      const result = await ctx.callTool("sevalla.databases.list", {});
+      mockRequestSuccess(ctx, { load_balancers: [] });
+      const result = await ctx.callTool("sevalla.load-balancers.list", {});
       expect(result).not.toHaveProperty("isError");
       expect(ctx.mockClient.request).toHaveBeenCalledWith(
         expect.objectContaining({
-          path: "/databases",
+          path: "/load-balancers",
           method: "GET",
           params: { company: "default-company-id" },
         })
@@ -78,8 +89,8 @@ describe("Database Tools", () => {
 
     it("should use provided company over default", async () => {
       mockClientSuccess(mock, ctx);
-      mockRequestSuccess(ctx, { databases: [] });
-      const result = await ctx.callTool("sevalla.databases.list", {
+      mockRequestSuccess(ctx, { load_balancers: [] });
+      const result = await ctx.callTool("sevalla.load-balancers.list", {
         company: "custom-company-id",
       });
       expect(result).not.toHaveProperty("isError");
@@ -92,8 +103,8 @@ describe("Database Tools", () => {
 
     it("should pass limit and offset as string params", async () => {
       mockClientSuccess(mock, ctx);
-      mockRequestSuccess(ctx, { databases: [] });
-      const result = await ctx.callTool("sevalla.databases.list", {
+      mockRequestSuccess(ctx, { load_balancers: [] });
+      const result = await ctx.callTool("sevalla.load-balancers.list", {
         limit: 10,
         offset: 20,
       });
@@ -107,14 +118,14 @@ describe("Database Tools", () => {
   });
 
   // ---------------------------------------------------------------------------
-  // sevalla.databases.get
+  // sevalla.load-balancers.get
   // ---------------------------------------------------------------------------
 
-  describe("sevalla.databases.get", () => {
+  describe("sevalla.load-balancers.get", () => {
     it("should handle auth failure", async () => {
       mockClientAuthFailure(mock);
-      const result = await ctx.callTool("sevalla.databases.get", {
-        id: "db-uuid-1",
+      const result = await ctx.callTool("sevalla.load-balancers.get", {
+        id: "lb-uuid-1",
       });
       expect(result).toHaveProperty("isError", true);
     });
@@ -122,22 +133,22 @@ describe("Database Tools", () => {
     it("should handle API error", async () => {
       mockClientSuccess(mock, ctx);
       mockRequestError(ctx, "NOT_FOUND", "not found");
-      const result = await ctx.callTool("sevalla.databases.get", {
-        id: "db-uuid-1",
+      const result = await ctx.callTool("sevalla.load-balancers.get", {
+        id: "lb-uuid-1",
       });
       expect(result).toHaveProperty("isError", true);
     });
 
     it("should return success", async () => {
       mockClientSuccess(mock, ctx);
-      mockRequestSuccess(ctx, { id: "db-uuid-1", name: "mydb" });
-      const result = await ctx.callTool("sevalla.databases.get", {
-        id: "db-uuid-1",
+      mockRequestSuccess(ctx, { id: "lb-uuid-1", name: "my-lb" });
+      const result = await ctx.callTool("sevalla.load-balancers.get", {
+        id: "lb-uuid-1",
       });
       expect(result).not.toHaveProperty("isError");
       expect(ctx.mockClient.request).toHaveBeenCalledWith(
         expect.objectContaining({
-          path: "/databases/db-uuid-1",
+          path: "/load-balancers/lb-uuid-1",
           method: "GET",
         })
       );
@@ -145,15 +156,23 @@ describe("Database Tools", () => {
   });
 
   // ---------------------------------------------------------------------------
-  // sevalla.databases.create
+  // sevalla.load-balancers.create
   // ---------------------------------------------------------------------------
 
-  describe("sevalla.databases.create", () => {
+  describe("sevalla.load-balancers.create", () => {
     it("should handle auth failure", async () => {
       mockClientAuthFailure(mock);
-      const result = await ctx.callTool("sevalla.databases.create", {
-        display_name: "Test DB",
-        type: "postgresql",
+      const result = await ctx.callTool("sevalla.load-balancers.create", {
+        display_name: "Test LB",
+      });
+      expect(result).toHaveProperty("isError", true);
+    });
+
+    it("should return error when no company ID is available", async () => {
+      mockGetCompanyId.mockReturnValue(undefined);
+      mockClientSuccess(mock, ctx);
+      const result = await ctx.callTool("sevalla.load-balancers.create", {
+        display_name: "Test LB",
       });
       expect(result).toHaveProperty("isError", true);
     });
@@ -161,29 +180,26 @@ describe("Database Tools", () => {
     it("should handle API error", async () => {
       mockClientSuccess(mock, ctx);
       mockRequestError(ctx, "VALIDATION_ERROR", "invalid");
-      const result = await ctx.callTool("sevalla.databases.create", {
-        display_name: "Test DB",
-        type: "postgresql",
+      const result = await ctx.callTool("sevalla.load-balancers.create", {
+        display_name: "Test LB",
       });
       expect(result).toHaveProperty("isError", true);
     });
 
     it("should return success with required fields", async () => {
       mockClientSuccess(mock, ctx);
-      mockRequestSuccess(ctx, { id: "new-db-uuid" });
-      const result = await ctx.callTool("sevalla.databases.create", {
-        display_name: "Test DB",
-        type: "postgresql",
+      mockRequestSuccess(ctx, { id: "new-lb-uuid" });
+      const result = await ctx.callTool("sevalla.load-balancers.create", {
+        display_name: "Test LB",
       });
       expect(result).not.toHaveProperty("isError");
       expect(ctx.mockClient.request).toHaveBeenCalledWith(
         expect.objectContaining({
-          path: "/databases",
+          path: "/load-balancers",
           method: "POST",
           body: expect.objectContaining({
             company: "default-company-id",
-            display_name: "Test DB",
-            type: "postgresql",
+            display_name: "Test LB",
           }),
         })
       );
@@ -191,27 +207,21 @@ describe("Database Tools", () => {
 
     it("should pass optional fields in body", async () => {
       mockClientSuccess(mock, ctx);
-      mockRequestSuccess(ctx, { id: "new-db-uuid" });
-      const result = await ctx.callTool("sevalla.databases.create", {
+      mockRequestSuccess(ctx, { id: "new-lb-uuid" });
+      const result = await ctx.callTool("sevalla.load-balancers.create", {
         company: "custom-company-id",
-        display_name: "Test DB",
-        type: "mariadb",
-        version: "10.6",
+        display_name: "Test LB",
         location: "us-east-1",
-        resource_type: "db-small",
       });
       expect(result).not.toHaveProperty("isError");
       expect(ctx.mockClient.request).toHaveBeenCalledWith(
         expect.objectContaining({
-          path: "/databases",
+          path: "/load-balancers",
           method: "POST",
           body: {
             company: "custom-company-id",
-            display_name: "Test DB",
-            type: "mariadb",
-            version: "10.6",
+            display_name: "Test LB",
             location: "us-east-1",
-            resource_type: "db-small",
           },
         })
       );
@@ -219,15 +229,15 @@ describe("Database Tools", () => {
   });
 
   // ---------------------------------------------------------------------------
-  // sevalla.databases.update
+  // sevalla.load-balancers.update
   // ---------------------------------------------------------------------------
 
-  describe("sevalla.databases.update", () => {
+  describe("sevalla.load-balancers.update", () => {
     it("should handle auth failure", async () => {
       mockClientAuthFailure(mock);
-      const result = await ctx.callTool("sevalla.databases.update", {
-        id: "db-uuid-1",
-        display_name: "Updated DB",
+      const result = await ctx.callTool("sevalla.load-balancers.update", {
+        id: "lb-uuid-1",
+        display_name: "Updated LB",
       });
       expect(result).toHaveProperty("isError", true);
     });
@@ -235,29 +245,30 @@ describe("Database Tools", () => {
     it("should handle API error", async () => {
       mockClientSuccess(mock, ctx);
       mockRequestError(ctx, "SERVER_ERROR", "fail");
-      const result = await ctx.callTool("sevalla.databases.update", {
-        id: "db-uuid-1",
-        display_name: "Updated DB",
+      const result = await ctx.callTool("sevalla.load-balancers.update", {
+        id: "lb-uuid-1",
+        display_name: "Updated LB",
       });
       expect(result).toHaveProperty("isError", true);
     });
 
     it("should return success", async () => {
       mockClientSuccess(mock, ctx);
-      mockRequestSuccess(ctx, { id: "db-uuid-1", display_name: "Updated DB" });
-      const result = await ctx.callTool("sevalla.databases.update", {
-        id: "db-uuid-1",
-        display_name: "Updated DB",
-        resource_type: "db-large",
+      mockRequestSuccess(ctx, {
+        id: "lb-uuid-1",
+        display_name: "Updated LB",
+      });
+      const result = await ctx.callTool("sevalla.load-balancers.update", {
+        id: "lb-uuid-1",
+        display_name: "Updated LB",
       });
       expect(result).not.toHaveProperty("isError");
       expect(ctx.mockClient.request).toHaveBeenCalledWith(
         expect.objectContaining({
-          path: "/databases/db-uuid-1",
+          path: "/load-balancers/lb-uuid-1",
           method: "PATCH",
           body: {
-            display_name: "Updated DB",
-            resource_type: "db-large",
+            display_name: "Updated LB",
           },
         })
       );
@@ -265,14 +276,14 @@ describe("Database Tools", () => {
   });
 
   // ---------------------------------------------------------------------------
-  // sevalla.databases.delete
+  // sevalla.load-balancers.delete
   // ---------------------------------------------------------------------------
 
-  describe("sevalla.databases.delete", () => {
+  describe("sevalla.load-balancers.delete", () => {
     it("should handle auth failure", async () => {
       mockClientAuthFailure(mock);
-      const result = await ctx.callTool("sevalla.databases.delete", {
-        id: "db-uuid-1",
+      const result = await ctx.callTool("sevalla.load-balancers.delete", {
+        id: "lb-uuid-1",
       });
       expect(result).toHaveProperty("isError", true);
     });
@@ -280,8 +291,8 @@ describe("Database Tools", () => {
     it("should handle API error", async () => {
       mockClientSuccess(mock, ctx);
       mockRequestError(ctx, "NOT_FOUND", "not found");
-      const result = await ctx.callTool("sevalla.databases.delete", {
-        id: "db-uuid-1",
+      const result = await ctx.callTool("sevalla.load-balancers.delete", {
+        id: "lb-uuid-1",
       });
       expect(result).toHaveProperty("isError", true);
     });
@@ -289,13 +300,13 @@ describe("Database Tools", () => {
     it("should return success", async () => {
       mockClientSuccess(mock, ctx);
       mockRequestSuccess(ctx, { deleted: true });
-      const result = await ctx.callTool("sevalla.databases.delete", {
-        id: "db-uuid-1",
+      const result = await ctx.callTool("sevalla.load-balancers.delete", {
+        id: "lb-uuid-1",
       });
       expect(result).not.toHaveProperty("isError");
       expect(ctx.mockClient.request).toHaveBeenCalledWith(
         expect.objectContaining({
-          path: "/databases/db-uuid-1",
+          path: "/load-balancers/lb-uuid-1",
           method: "DELETE",
         })
       );
@@ -303,151 +314,40 @@ describe("Database Tools", () => {
   });
 
   // ---------------------------------------------------------------------------
-  // sevalla.databases.activate
+  // sevalla.load-balancers.destinations.list
   // ---------------------------------------------------------------------------
 
-  describe("sevalla.databases.activate", () => {
+  describe("sevalla.load-balancers.destinations.list", () => {
     it("should handle auth failure", async () => {
       mockClientAuthFailure(mock);
-      const result = await ctx.callTool("sevalla.databases.activate", {
-        id: "db-uuid-1",
-      });
-      expect(result).toHaveProperty("isError", true);
-    });
-
-    it("should handle API error", async () => {
-      mockClientSuccess(mock, ctx);
-      mockRequestError(ctx, "SERVER_ERROR", "fail");
-      const result = await ctx.callTool("sevalla.databases.activate", {
-        id: "db-uuid-1",
-      });
-      expect(result).toHaveProperty("isError", true);
-    });
-
-    it("should return success", async () => {
-      mockClientSuccess(mock, ctx);
-      mockRequestSuccess(ctx, { id: "db-uuid-1" });
-      const result = await ctx.callTool("sevalla.databases.activate", {
-        id: "db-uuid-1",
-      });
-      expect(result).not.toHaveProperty("isError");
-      expect(ctx.mockClient.request).toHaveBeenCalledWith(
-        expect.objectContaining({
-          path: "/databases/db-uuid-1/activate",
-          method: "POST",
-        })
+      const result = await ctx.callTool(
+        "sevalla.load-balancers.destinations.list",
+        { id: "lb-uuid-1" }
       );
-    });
-  });
-
-  // ---------------------------------------------------------------------------
-  // sevalla.databases.suspend
-  // ---------------------------------------------------------------------------
-
-  describe("sevalla.databases.suspend", () => {
-    it("should handle auth failure", async () => {
-      mockClientAuthFailure(mock);
-      const result = await ctx.callTool("sevalla.databases.suspend", {
-        id: "db-uuid-1",
-      });
       expect(result).toHaveProperty("isError", true);
     });
 
     it("should handle API error", async () => {
       mockClientSuccess(mock, ctx);
       mockRequestError(ctx, "SERVER_ERROR", "fail");
-      const result = await ctx.callTool("sevalla.databases.suspend", {
-        id: "db-uuid-1",
-      });
-      expect(result).toHaveProperty("isError", true);
-    });
-
-    it("should return success", async () => {
-      mockClientSuccess(mock, ctx);
-      mockRequestSuccess(ctx, { id: "db-uuid-1" });
-      const result = await ctx.callTool("sevalla.databases.suspend", {
-        id: "db-uuid-1",
-      });
-      expect(result).not.toHaveProperty("isError");
-      expect(ctx.mockClient.request).toHaveBeenCalledWith(
-        expect.objectContaining({
-          path: "/databases/db-uuid-1/suspend",
-          method: "POST",
-        })
+      const result = await ctx.callTool(
+        "sevalla.load-balancers.destinations.list",
+        { id: "lb-uuid-1" }
       );
-    });
-  });
-
-  // ---------------------------------------------------------------------------
-  // sevalla.databases.reset-password
-  // ---------------------------------------------------------------------------
-
-  describe("sevalla.databases.reset-password", () => {
-    it("should handle auth failure", async () => {
-      mockClientAuthFailure(mock);
-      const result = await ctx.callTool("sevalla.databases.reset-password", {
-        id: "db-uuid-1",
-      });
-      expect(result).toHaveProperty("isError", true);
-    });
-
-    it("should handle API error", async () => {
-      mockClientSuccess(mock, ctx);
-      mockRequestError(ctx, "SERVER_ERROR", "fail");
-      const result = await ctx.callTool("sevalla.databases.reset-password", {
-        id: "db-uuid-1",
-      });
       expect(result).toHaveProperty("isError", true);
     });
 
     it("should return success", async () => {
       mockClientSuccess(mock, ctx);
-      mockRequestSuccess(ctx, { id: "db-uuid-1" });
-      const result = await ctx.callTool("sevalla.databases.reset-password", {
-        id: "db-uuid-1",
-      });
-      expect(result).not.toHaveProperty("isError");
-      expect(ctx.mockClient.request).toHaveBeenCalledWith(
-        expect.objectContaining({
-          path: "/databases/db-uuid-1/reset-password",
-          method: "POST",
-        })
+      mockRequestSuccess(ctx, { destinations: [] });
+      const result = await ctx.callTool(
+        "sevalla.load-balancers.destinations.list",
+        { id: "lb-uuid-1" }
       );
-    });
-  });
-
-  // ---------------------------------------------------------------------------
-  // sevalla.databases.backups.list
-  // ---------------------------------------------------------------------------
-
-  describe("sevalla.databases.backups.list", () => {
-    it("should handle auth failure", async () => {
-      mockClientAuthFailure(mock);
-      const result = await ctx.callTool("sevalla.databases.backups.list", {
-        id: "db-uuid-1",
-      });
-      expect(result).toHaveProperty("isError", true);
-    });
-
-    it("should handle API error", async () => {
-      mockClientSuccess(mock, ctx);
-      mockRequestError(ctx, "SERVER_ERROR", "fail");
-      const result = await ctx.callTool("sevalla.databases.backups.list", {
-        id: "db-uuid-1",
-      });
-      expect(result).toHaveProperty("isError", true);
-    });
-
-    it("should return success", async () => {
-      mockClientSuccess(mock, ctx);
-      mockRequestSuccess(ctx, { backups: [] });
-      const result = await ctx.callTool("sevalla.databases.backups.list", {
-        id: "db-uuid-1",
-      });
       expect(result).not.toHaveProperty("isError");
       expect(ctx.mockClient.request).toHaveBeenCalledWith(
         expect.objectContaining({
-          path: "/databases/db-uuid-1/backups",
+          path: "/load-balancers/lb-uuid-1/destinations",
           method: "GET",
         })
       );
@@ -455,78 +355,123 @@ describe("Database Tools", () => {
   });
 
   // ---------------------------------------------------------------------------
-  // sevalla.databases.backups.create
+  // sevalla.load-balancers.destinations.add
   // ---------------------------------------------------------------------------
 
-  describe("sevalla.databases.backups.create", () => {
+  describe("sevalla.load-balancers.destinations.add", () => {
     it("should handle auth failure", async () => {
       mockClientAuthFailure(mock);
-      const result = await ctx.callTool("sevalla.databases.backups.create", {
-        id: "db-uuid-1",
-      });
+      const result = await ctx.callTool(
+        "sevalla.load-balancers.destinations.add",
+        { id: "lb-uuid-1", target_id: "target-uuid-1" }
+      );
       expect(result).toHaveProperty("isError", true);
     });
 
     it("should handle API error", async () => {
       mockClientSuccess(mock, ctx);
-      mockRequestError(ctx, "SERVER_ERROR", "fail");
-      const result = await ctx.callTool("sevalla.databases.backups.create", {
-        id: "db-uuid-1",
-      });
+      mockRequestError(ctx, "VALIDATION_ERROR", "invalid");
+      const result = await ctx.callTool(
+        "sevalla.load-balancers.destinations.add",
+        { id: "lb-uuid-1", target_id: "target-uuid-1" }
+      );
       expect(result).toHaveProperty("isError", true);
     });
 
     it("should return success", async () => {
       mockClientSuccess(mock, ctx);
-      mockRequestSuccess(ctx, { id: "backup-uuid-1" });
-      const result = await ctx.callTool("sevalla.databases.backups.create", {
-        id: "db-uuid-1",
-      });
+      mockRequestSuccess(ctx, { id: "dest-uuid-1" });
+      const result = await ctx.callTool(
+        "sevalla.load-balancers.destinations.add",
+        { id: "lb-uuid-1", target_id: "target-uuid-1" }
+      );
       expect(result).not.toHaveProperty("isError");
       expect(ctx.mockClient.request).toHaveBeenCalledWith(
         expect.objectContaining({
-          path: "/databases/db-uuid-1/backups",
+          path: "/load-balancers/lb-uuid-1/destinations",
           method: "POST",
+          body: { target_id: "target-uuid-1" },
         })
       );
     });
   });
 
   // ---------------------------------------------------------------------------
-  // sevalla.databases.backups.restore
+  // sevalla.load-balancers.destinations.remove
   // ---------------------------------------------------------------------------
 
-  describe("sevalla.databases.backups.restore", () => {
+  describe("sevalla.load-balancers.destinations.remove", () => {
     it("should handle auth failure", async () => {
       mockClientAuthFailure(mock);
-      const result = await ctx.callTool("sevalla.databases.backups.restore", {
-        id: "db-uuid-1",
-        backup_id: "backup-uuid-1",
-      });
+      const result = await ctx.callTool(
+        "sevalla.load-balancers.destinations.remove",
+        { id: "lb-uuid-1", dest_id: "dest-uuid-1" }
+      );
+      expect(result).toHaveProperty("isError", true);
+    });
+
+    it("should handle API error", async () => {
+      mockClientSuccess(mock, ctx);
+      mockRequestError(ctx, "NOT_FOUND", "not found");
+      const result = await ctx.callTool(
+        "sevalla.load-balancers.destinations.remove",
+        { id: "lb-uuid-1", dest_id: "dest-uuid-1" }
+      );
+      expect(result).toHaveProperty("isError", true);
+    });
+
+    it("should return success", async () => {
+      mockClientSuccess(mock, ctx);
+      mockRequestSuccess(ctx, { deleted: true });
+      const result = await ctx.callTool(
+        "sevalla.load-balancers.destinations.remove",
+        { id: "lb-uuid-1", dest_id: "dest-uuid-1" }
+      );
+      expect(result).not.toHaveProperty("isError");
+      expect(ctx.mockClient.request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          path: "/load-balancers/lb-uuid-1/destinations/dest-uuid-1",
+          method: "DELETE",
+        })
+      );
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // sevalla.load-balancers.destinations.toggle
+  // ---------------------------------------------------------------------------
+
+  describe("sevalla.load-balancers.destinations.toggle", () => {
+    it("should handle auth failure", async () => {
+      mockClientAuthFailure(mock);
+      const result = await ctx.callTool(
+        "sevalla.load-balancers.destinations.toggle",
+        { id: "lb-uuid-1", dest_id: "dest-uuid-1" }
+      );
       expect(result).toHaveProperty("isError", true);
     });
 
     it("should handle API error", async () => {
       mockClientSuccess(mock, ctx);
       mockRequestError(ctx, "SERVER_ERROR", "fail");
-      const result = await ctx.callTool("sevalla.databases.backups.restore", {
-        id: "db-uuid-1",
-        backup_id: "backup-uuid-1",
-      });
+      const result = await ctx.callTool(
+        "sevalla.load-balancers.destinations.toggle",
+        { id: "lb-uuid-1", dest_id: "dest-uuid-1" }
+      );
       expect(result).toHaveProperty("isError", true);
     });
 
     it("should return success", async () => {
       mockClientSuccess(mock, ctx);
-      mockRequestSuccess(ctx, { restored: true });
-      const result = await ctx.callTool("sevalla.databases.backups.restore", {
-        id: "db-uuid-1",
-        backup_id: "backup-uuid-1",
-      });
+      mockRequestSuccess(ctx, { id: "dest-uuid-1", enabled: true });
+      const result = await ctx.callTool(
+        "sevalla.load-balancers.destinations.toggle",
+        { id: "lb-uuid-1", dest_id: "dest-uuid-1" }
+      );
       expect(result).not.toHaveProperty("isError");
       expect(ctx.mockClient.request).toHaveBeenCalledWith(
         expect.objectContaining({
-          path: "/databases/db-uuid-1/backups/backup-uuid-1/restore",
+          path: "/load-balancers/lb-uuid-1/destinations/dest-uuid-1/toggle",
           method: "POST",
         })
       );

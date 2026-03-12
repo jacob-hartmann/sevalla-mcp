@@ -1,7 +1,7 @@
 /**
- * Sevalla Deployment Tools
+ * Sevalla Application Domain Tools
  *
- * Tools for managing application deployments.
+ * Tools for managing application custom domains.
  */
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -11,67 +11,18 @@ import {
   formatAuthError,
   formatError,
   formatSuccess,
-  buildParams,
   sevallaOutputSchema,
 } from "./utils.js";
 
-export function registerDeploymentTools(server: McpServer): void {
-  // sevalla.deployments.list
+export function registerAppDomainTools(server: McpServer): void {
+  // sevalla.applications.domains.list
   server.registerTool(
-    "sevalla.deployments.list",
+    "sevalla.applications.domains.list",
     {
-      title: "List Deployments",
-      description: "List all deployments for an application.",
+      title: "List Application Domains",
+      description: "List all custom domains for an application.",
       inputSchema: z.object({
         app_id: z.uuid().describe("Application UUID"),
-        limit: z
-          .number()
-          .min(1)
-          .max(100)
-          .optional()
-          .describe("Maximum number of results (1-100)"),
-        offset: z
-          .number()
-          .min(0)
-          .optional()
-          .describe("Number of results to skip"),
-      }),
-      outputSchema: sevallaOutputSchema,
-      annotations: {
-        readOnlyHint: true,
-        idempotentHint: true,
-        openWorldHint: true,
-      },
-    },
-    async (args, extra) => {
-      const clientResult = getSevallaClient(extra);
-      if (!clientResult.success) return formatAuthError(clientResult.error);
-
-      const params = buildParams({
-        limit: args.limit?.toString(),
-        offset: args.offset?.toString(),
-      });
-
-      const result = await clientResult.client.request<unknown>({
-        path: `/applications/${args.app_id}/deployments`,
-        method: "GET",
-        params: params as Record<string, string>,
-      });
-
-      if (!result.success) return formatError(result.error, "deployment");
-      return formatSuccess(result.data);
-    }
-  );
-
-  // sevalla.deployments.get
-  server.registerTool(
-    "sevalla.deployments.get",
-    {
-      title: "Get Deployment",
-      description: "Get details of a specific deployment.",
-      inputSchema: z.object({
-        app_id: z.uuid().describe("Application UUID"),
-        id: z.uuid().describe("Deployment UUID"),
       }),
       outputSchema: sevallaOutputSchema,
       annotations: {
@@ -85,28 +36,57 @@ export function registerDeploymentTools(server: McpServer): void {
       if (!clientResult.success) return formatAuthError(clientResult.error);
 
       const result = await clientResult.client.request<unknown>({
-        path: `/applications/${args.app_id}/deployments/${args.id}`,
+        path: `/applications/${args.app_id}/domains`,
         method: "GET",
       });
 
-      if (!result.success) return formatError(result.error, "deployment");
+      if (!result.success) return formatError(result.error, "domain");
       return formatSuccess(result.data);
     }
   );
 
-  // sevalla.deployments.start
+  // sevalla.applications.domains.add
   server.registerTool(
-    "sevalla.deployments.start",
+    "sevalla.applications.domains.add",
     {
-      title: "Start Deployment",
-      description: "Trigger a new deployment for an application.",
+      title: "Add Application Domain",
+      description: "Add a custom domain to an application.",
       inputSchema: z.object({
         app_id: z.uuid().describe("Application UUID"),
-        branch: z.string().optional().describe("Git branch to deploy"),
-        tag: z.string().optional().describe("Git tag to deploy"),
+        hostname: z.string().describe("Domain hostname (e.g., example.com)"),
+      }),
+      outputSchema: sevallaOutputSchema,
+      annotations: { openWorldHint: true },
+    },
+    async (args, extra) => {
+      const clientResult = getSevallaClient(extra);
+      if (!clientResult.success) return formatAuthError(clientResult.error);
+
+      const result = await clientResult.client.request<unknown>({
+        path: `/applications/${args.app_id}/domains`,
+        method: "POST",
+        body: { hostname: args.hostname },
+      });
+
+      if (!result.success) return formatError(result.error, "domain");
+      return formatSuccess(result.data);
+    }
+  );
+
+  // sevalla.applications.domains.delete
+  server.registerTool(
+    "sevalla.applications.domains.delete",
+    {
+      title: "Delete Application Domain",
+      description: "Remove a custom domain from an application.",
+      inputSchema: z.object({
+        app_id: z.uuid().describe("Application UUID"),
+        domain_id: z.uuid().describe("Domain UUID"),
       }),
       outputSchema: sevallaOutputSchema,
       annotations: {
+        destructiveHint: true,
+        idempotentHint: true,
         openWorldHint: true,
       },
     },
@@ -114,31 +94,25 @@ export function registerDeploymentTools(server: McpServer): void {
       const clientResult = getSevallaClient(extra);
       if (!clientResult.success) return formatAuthError(clientResult.error);
 
-      const body = buildParams({
-        branch: args.branch,
-        tag: args.tag,
-      });
-
       const result = await clientResult.client.request<unknown>({
-        path: `/applications/${args.app_id}/deployments`,
-        method: "POST",
-        body,
+        path: `/applications/${args.app_id}/domains/${args.domain_id}`,
+        method: "DELETE",
       });
 
-      if (!result.success) return formatError(result.error, "deployment");
+      if (!result.success) return formatError(result.error, "domain");
       return formatSuccess(result.data);
     }
   );
 
-  // sevalla.deployments.cancel
+  // sevalla.applications.domains.set-primary
   server.registerTool(
-    "sevalla.deployments.cancel",
+    "sevalla.applications.domains.set-primary",
     {
-      title: "Cancel Deployment",
-      description: "Cancel an in-progress deployment.",
+      title: "Set Primary Domain",
+      description: "Set a domain as the primary domain for an application.",
       inputSchema: z.object({
         app_id: z.uuid().describe("Application UUID"),
-        id: z.uuid().describe("Deployment UUID"),
+        domain_id: z.uuid().describe("Domain UUID"),
       }),
       outputSchema: sevallaOutputSchema,
       annotations: { openWorldHint: true },
@@ -148,24 +122,24 @@ export function registerDeploymentTools(server: McpServer): void {
       if (!clientResult.success) return formatAuthError(clientResult.error);
 
       const result = await clientResult.client.request<unknown>({
-        path: `/applications/${args.app_id}/deployments/${args.id}/cancel`,
+        path: `/applications/${args.app_id}/domains/${args.domain_id}/set-primary`,
         method: "POST",
       });
 
-      if (!result.success) return formatError(result.error, "deployment");
+      if (!result.success) return formatError(result.error, "domain");
       return formatSuccess(result.data);
     }
   );
 
-  // sevalla.deployments.rollback
+  // sevalla.applications.domains.refresh-status
   server.registerTool(
-    "sevalla.deployments.rollback",
+    "sevalla.applications.domains.refresh-status",
     {
-      title: "Rollback Deployment",
-      description: "Rollback to a specific deployment.",
+      title: "Refresh Domain Status",
+      description: "Refresh the DNS/SSL verification status of a domain.",
       inputSchema: z.object({
         app_id: z.uuid().describe("Application UUID"),
-        deployment_id: z.uuid().describe("Deployment UUID to rollback to"),
+        domain_id: z.uuid().describe("Domain UUID"),
       }),
       outputSchema: sevallaOutputSchema,
       annotations: { openWorldHint: true },
@@ -175,11 +149,11 @@ export function registerDeploymentTools(server: McpServer): void {
       if (!clientResult.success) return formatAuthError(clientResult.error);
 
       const result = await clientResult.client.request<unknown>({
-        path: `/applications/${args.app_id}/deployments/${args.deployment_id}/rollback`,
+        path: `/applications/${args.app_id}/domains/${args.domain_id}/refresh`,
         method: "POST",
       });
 
-      if (!result.success) return formatError(result.error, "deployment");
+      if (!result.success) return formatError(result.error, "domain");
       return formatSuccess(result.data);
     }
   );

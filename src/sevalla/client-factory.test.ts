@@ -30,7 +30,7 @@ describe("client-factory", () => {
     mockLoadSevallaConfig = vi.fn().mockReturnValue({
       apiKey: "key",
       companyId: undefined,
-      baseUrl: "https://api.sevalla.com/v2",
+      baseUrl: "https://api.sevalla.com/v3",
     });
 
     vi.doMock("./auth.js", () => {
@@ -183,7 +183,7 @@ describe("client-factory", () => {
     mockLoadSevallaConfig.mockReturnValue({
       apiKey: "changed",
       companyId: undefined,
-      baseUrl: "https://api.sevalla.com/v2",
+      baseUrl: "https://api.sevalla.com/v3",
     });
     const result2 = getSevallaClient(mockExtra);
     expect(result2.success).toBe(true);

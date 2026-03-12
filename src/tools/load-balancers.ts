@@ -1,7 +1,7 @@
 /**
- * Sevalla Application Tools
+ * Sevalla Load Balancer Tools
  *
- * Tools for managing Sevalla applications.
+ * Tools for managing Sevalla load balancers and their destinations.
  */
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -16,13 +16,13 @@ import {
   sevallaOutputSchema,
 } from "./utils.js";
 
-export function registerApplicationTools(server: McpServer): void {
-  // sevalla.applications.list
+export function registerLoadBalancerTools(server: McpServer): void {
+  // sevalla.load-balancers.list
   server.registerTool(
-    "sevalla.applications.list",
+    "sevalla.load-balancers.list",
     {
-      title: "List Applications",
-      description: "List all applications for a company.",
+      title: "List Load Balancers",
+      description: "List all load balancers for a company.",
       inputSchema: z.object({
         company: z
           .uuid()
@@ -52,6 +52,11 @@ export function registerApplicationTools(server: McpServer): void {
       if (!clientResult.success) return formatAuthError(clientResult.error);
 
       const companyId = args.company ?? getCompanyId();
+      if (!companyId) {
+        return formatAuthError(
+          "No company ID provided. Pass 'company' or set SEVALLA_COMPANY_ID."
+        );
+      }
       const params = buildParams({
         company: companyId,
         limit: args.limit?.toString(),
@@ -59,24 +64,24 @@ export function registerApplicationTools(server: McpServer): void {
       });
 
       const result = await clientResult.client.request<unknown>({
-        path: "/applications",
+        path: "/load-balancers",
         method: "GET",
         params: params as Record<string, string>,
       });
 
-      if (!result.success) return formatError(result.error, "application");
+      if (!result.success) return formatError(result.error, "load balancer");
       return formatSuccess(result.data);
     }
   );
 
-  // sevalla.applications.get
+  // sevalla.load-balancers.get
   server.registerTool(
-    "sevalla.applications.get",
+    "sevalla.load-balancers.get",
     {
-      title: "Get Application",
-      description: "Get details of a specific application.",
+      title: "Get Load Balancer",
+      description: "Get details of a specific load balancer.",
       inputSchema: z.object({
-        id: z.uuid().describe("Application UUID"),
+        id: z.uuid().describe("Load balancer UUID"),
       }),
       outputSchema: sevallaOutputSchema,
       annotations: {
@@ -90,33 +95,27 @@ export function registerApplicationTools(server: McpServer): void {
       if (!clientResult.success) return formatAuthError(clientResult.error);
 
       const result = await clientResult.client.request<unknown>({
-        path: `/applications/${args.id}`,
+        path: `/load-balancers/${args.id}`,
         method: "GET",
       });
 
-      if (!result.success) return formatError(result.error, "application");
+      if (!result.success) return formatError(result.error, "load balancer");
       return formatSuccess(result.data);
     }
   );
 
-  // sevalla.applications.create
+  // sevalla.load-balancers.create
   server.registerTool(
-    "sevalla.applications.create",
+    "sevalla.load-balancers.create",
     {
-      title: "Create Application",
-      description: "Create a new application.",
+      title: "Create Load Balancer",
+      description: "Create a new load balancer.",
       inputSchema: z.object({
         company: z
           .uuid()
           .optional()
           .describe("Company UUID (defaults to SEVALLA_COMPANY_ID env var)"),
-        display_name: z.string().describe("Display name for the application"),
-        repository: z.string().describe("Git repository URL"),
-        branch: z.string().describe("Git branch to deploy"),
-        build_type: z
-          .enum(["nixpacks", "buildpacks", "dockerfile"])
-          .optional()
-          .describe("Build type"),
+        display_name: z.string().describe("Display name for the load balancer"),
         location: z
           .string()
           .optional()
@@ -138,44 +137,35 @@ export function registerApplicationTools(server: McpServer): void {
       const body = buildParams({
         company: companyId,
         display_name: args.display_name,
-        repository: args.repository,
-        branch: args.branch,
-        build_type: args.build_type,
         location: args.location,
       });
 
       const result = await clientResult.client.request<unknown>({
-        path: "/applications",
+        path: "/load-balancers",
         method: "POST",
         body,
       });
 
-      if (!result.success) return formatError(result.error, "application");
+      if (!result.success) return formatError(result.error, "load balancer");
       return formatSuccess(result.data);
     }
   );
 
-  // sevalla.applications.update
+  // sevalla.load-balancers.update
   server.registerTool(
-    "sevalla.applications.update",
+    "sevalla.load-balancers.update",
     {
-      title: "Update Application",
-      description: "Update an existing application's configuration.",
+      title: "Update Load Balancer",
+      description: "Update an existing load balancer's configuration.",
       inputSchema: z.object({
-        id: z.uuid().describe("Application UUID"),
+        id: z.uuid().describe("Load balancer UUID"),
         display_name: z
           .string()
           .optional()
-          .describe("New display name for the application"),
-        note: z
-          .string()
-          .optional()
-          .describe("Note or description for the application"),
+          .describe("New display name for the load balancer"),
       }),
       outputSchema: sevallaOutputSchema,
-      annotations: {
-        openWorldHint: true,
-      },
+      annotations: { openWorldHint: true },
     },
     async (args, extra) => {
       const clientResult = getSevallaClient(extra);
@@ -183,29 +173,28 @@ export function registerApplicationTools(server: McpServer): void {
 
       const body = buildParams({
         display_name: args.display_name,
-        note: args.note,
       });
 
       const result = await clientResult.client.request<unknown>({
-        path: `/applications/${args.id}`,
+        path: `/load-balancers/${args.id}`,
         method: "PATCH",
         body,
       });
 
-      if (!result.success) return formatError(result.error, "application");
+      if (!result.success) return formatError(result.error, "load balancer");
       return formatSuccess(result.data);
     }
   );
 
-  // sevalla.applications.delete
+  // sevalla.load-balancers.delete
   server.registerTool(
-    "sevalla.applications.delete",
+    "sevalla.load-balancers.delete",
     {
-      title: "Delete Application",
+      title: "Delete Load Balancer",
       description:
-        "Permanently delete an application. This action cannot be undone.",
+        "Permanently delete a load balancer. This action cannot be undone.",
       inputSchema: z.object({
-        id: z.uuid().describe("Application UUID"),
+        id: z.uuid().describe("Load balancer UUID"),
       }),
       outputSchema: sevallaOutputSchema,
       annotations: {
@@ -219,23 +208,120 @@ export function registerApplicationTools(server: McpServer): void {
       if (!clientResult.success) return formatAuthError(clientResult.error);
 
       const result = await clientResult.client.request<unknown>({
-        path: `/applications/${args.id}`,
+        path: `/load-balancers/${args.id}`,
         method: "DELETE",
       });
 
-      if (!result.success) return formatError(result.error, "application");
+      if (!result.success) return formatError(result.error, "load balancer");
       return formatSuccess(result.data);
     }
   );
 
-  // sevalla.applications.activate
+  // sevalla.load-balancers.destinations.list
   server.registerTool(
-    "sevalla.applications.activate",
+    "sevalla.load-balancers.destinations.list",
     {
-      title: "Activate Application",
-      description: "Activate a suspended application.",
+      title: "List Load Balancer Destinations",
+      description: "List all destinations for a load balancer.",
       inputSchema: z.object({
-        id: z.uuid().describe("Application UUID"),
+        id: z.uuid().describe("Load balancer UUID"),
+      }),
+      outputSchema: sevallaOutputSchema,
+      annotations: {
+        readOnlyHint: true,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
+    },
+    async (args, extra) => {
+      const clientResult = getSevallaClient(extra);
+      if (!clientResult.success) return formatAuthError(clientResult.error);
+
+      const result = await clientResult.client.request<unknown>({
+        path: `/load-balancers/${args.id}/destinations`,
+        method: "GET",
+      });
+
+      if (!result.success)
+        return formatError(result.error, "load balancer destination");
+      return formatSuccess(result.data);
+    }
+  );
+
+  // sevalla.load-balancers.destinations.add
+  server.registerTool(
+    "sevalla.load-balancers.destinations.add",
+    {
+      title: "Add Load Balancer Destination",
+      description: "Add a destination to a load balancer.",
+      inputSchema: z.object({
+        id: z.uuid().describe("Load balancer UUID"),
+        target_id: z.uuid().describe("Target UUID to add as a destination"),
+      }),
+      outputSchema: sevallaOutputSchema,
+      annotations: { openWorldHint: true },
+    },
+    async (args, extra) => {
+      const clientResult = getSevallaClient(extra);
+      if (!clientResult.success) return formatAuthError(clientResult.error);
+
+      const body = buildParams({
+        target_id: args.target_id,
+      });
+
+      const result = await clientResult.client.request<unknown>({
+        path: `/load-balancers/${args.id}/destinations`,
+        method: "POST",
+        body,
+      });
+
+      if (!result.success)
+        return formatError(result.error, "load balancer destination");
+      return formatSuccess(result.data);
+    }
+  );
+
+  // sevalla.load-balancers.destinations.remove
+  server.registerTool(
+    "sevalla.load-balancers.destinations.remove",
+    {
+      title: "Remove Load Balancer Destination",
+      description: "Remove a destination from a load balancer.",
+      inputSchema: z.object({
+        id: z.uuid().describe("Load balancer UUID"),
+        dest_id: z.uuid().describe("Destination UUID to remove"),
+      }),
+      outputSchema: sevallaOutputSchema,
+      annotations: {
+        destructiveHint: true,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
+    },
+    async (args, extra) => {
+      const clientResult = getSevallaClient(extra);
+      if (!clientResult.success) return formatAuthError(clientResult.error);
+
+      const result = await clientResult.client.request<unknown>({
+        path: `/load-balancers/${args.id}/destinations/${args.dest_id}`,
+        method: "DELETE",
+      });
+
+      if (!result.success)
+        return formatError(result.error, "load balancer destination");
+      return formatSuccess(result.data);
+    }
+  );
+
+  // sevalla.load-balancers.destinations.toggle
+  server.registerTool(
+    "sevalla.load-balancers.destinations.toggle",
+    {
+      title: "Toggle Load Balancer Destination",
+      description: "Toggle a destination on or off for a load balancer.",
+      inputSchema: z.object({
+        id: z.uuid().describe("Load balancer UUID"),
+        dest_id: z.uuid().describe("Destination UUID to toggle"),
       }),
       outputSchema: sevallaOutputSchema,
       annotations: { openWorldHint: true },
@@ -245,63 +331,12 @@ export function registerApplicationTools(server: McpServer): void {
       if (!clientResult.success) return formatAuthError(clientResult.error);
 
       const result = await clientResult.client.request<unknown>({
-        path: `/applications/${args.id}/activate`,
+        path: `/load-balancers/${args.id}/destinations/${args.dest_id}/toggle`,
         method: "POST",
       });
 
-      if (!result.success) return formatError(result.error, "application");
-      return formatSuccess(result.data);
-    }
-  );
-
-  // sevalla.applications.suspend
-  server.registerTool(
-    "sevalla.applications.suspend",
-    {
-      title: "Suspend Application",
-      description: "Suspend a running application.",
-      inputSchema: z.object({
-        id: z.uuid().describe("Application UUID"),
-      }),
-      outputSchema: sevallaOutputSchema,
-      annotations: { openWorldHint: true },
-    },
-    async (args, extra) => {
-      const clientResult = getSevallaClient(extra);
-      if (!clientResult.success) return formatAuthError(clientResult.error);
-
-      const result = await clientResult.client.request<unknown>({
-        path: `/applications/${args.id}/suspend`,
-        method: "POST",
-      });
-
-      if (!result.success) return formatError(result.error, "application");
-      return formatSuccess(result.data);
-    }
-  );
-
-  // sevalla.applications.clone
-  server.registerTool(
-    "sevalla.applications.clone",
-    {
-      title: "Clone Application",
-      description: "Clone an existing application.",
-      inputSchema: z.object({
-        id: z.uuid().describe("Application UUID to clone"),
-      }),
-      outputSchema: sevallaOutputSchema,
-      annotations: { openWorldHint: true },
-    },
-    async (args, extra) => {
-      const clientResult = getSevallaClient(extra);
-      if (!clientResult.success) return formatAuthError(clientResult.error);
-
-      const result = await clientResult.client.request<unknown>({
-        path: `/applications/${args.id}/clone`,
-        method: "POST",
-      });
-
-      if (!result.success) return formatError(result.error, "application");
+      if (!result.success)
+        return formatError(result.error, "load balancer destination");
       return formatSuccess(result.data);
     }
   );

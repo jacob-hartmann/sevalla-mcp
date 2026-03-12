@@ -33,8 +33,8 @@ export function registerValidateTool(server: McpServer): void {
       if (!clientResult.success) return formatAuthError(clientResult.error);
 
       const result = await clientResult.client.request<unknown>({
-        path: "/validate",
-        method: "GET",
+        path: "/api-keys/validate",
+        method: "POST",
       });
 
       if (!result.success) return formatError(result.error);

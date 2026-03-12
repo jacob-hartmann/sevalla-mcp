@@ -43,7 +43,7 @@ describe("Sevalla Auth", () => {
       const config = loadSevallaConfig();
 
       expect(config.apiKey).toBe("test-key");
-      expect(config.baseUrl).toBe("https://api.sevalla.com/v2");
+      expect(config.baseUrl).toBe("https://api.sevalla.com/v3");
     });
 
     it("should include companyId when SEVALLA_COMPANY_ID is set", () => {

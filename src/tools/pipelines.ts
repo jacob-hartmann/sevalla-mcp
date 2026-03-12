@@ -52,6 +52,11 @@ export function registerPipelineTools(server: McpServer): void {
       if (!clientResult.success) return formatAuthError(clientResult.error);
 
       const companyId = args.company ?? getCompanyId();
+      if (!companyId) {
+        return formatAuthError(
+          "No company ID provided. Pass 'company' or set SEVALLA_COMPANY_ID."
+        );
+      }
       const params = buildParams({
         company: companyId,
         limit: args.limit?.toString(),
@@ -69,15 +74,87 @@ export function registerPipelineTools(server: McpServer): void {
     }
   );
 
-  // sevalla.pipelines.create-preview-app
+  // sevalla.pipelines.get
   server.registerTool(
-    "sevalla.pipelines.create-preview-app",
+    "sevalla.pipelines.get",
     {
-      title: "Create Preview App",
-      description: "Create a preview application from a pipeline.",
+      title: "Get Pipeline",
+      description: "Get details of a specific pipeline.",
       inputSchema: z.object({
         id: z.uuid().describe("Pipeline UUID"),
-        branch: z.string().optional().describe("Git branch to deploy"),
+      }),
+      outputSchema: sevallaOutputSchema,
+      annotations: {
+        readOnlyHint: true,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
+    },
+    async (args, extra) => {
+      const clientResult = getSevallaClient(extra);
+      if (!clientResult.success) return formatAuthError(clientResult.error);
+
+      const result = await clientResult.client.request<unknown>({
+        path: `/pipelines/${args.id}`,
+        method: "GET",
+      });
+
+      if (!result.success) return formatError(result.error, "pipeline");
+      return formatSuccess(result.data);
+    }
+  );
+
+  // sevalla.pipelines.create
+  server.registerTool(
+    "sevalla.pipelines.create",
+    {
+      title: "Create Pipeline",
+      description: "Create a new deployment pipeline.",
+      inputSchema: z.object({
+        company: z
+          .uuid()
+          .optional()
+          .describe("Company UUID (defaults to SEVALLA_COMPANY_ID env var)"),
+        name: z.string().describe("Pipeline name"),
+      }),
+      outputSchema: sevallaOutputSchema,
+      annotations: { openWorldHint: true },
+    },
+    async (args, extra) => {
+      const clientResult = getSevallaClient(extra);
+      if (!clientResult.success) return formatAuthError(clientResult.error);
+
+      const companyId = args.company ?? getCompanyId();
+      if (!companyId) {
+        return formatAuthError(
+          "No company ID provided. Pass 'company' or set SEVALLA_COMPANY_ID."
+        );
+      }
+      const body = buildParams({
+        company: companyId,
+        name: args.name,
+      });
+
+      const result = await clientResult.client.request<unknown>({
+        path: "/pipelines",
+        method: "POST",
+        body,
+      });
+
+      if (!result.success) return formatError(result.error, "pipeline");
+      return formatSuccess(result.data);
+    }
+  );
+
+  // sevalla.pipelines.update
+  server.registerTool(
+    "sevalla.pipelines.update",
+    {
+      title: "Update Pipeline",
+      description: "Update an existing pipeline.",
+      inputSchema: z.object({
+        id: z.uuid().describe("Pipeline UUID"),
+        name: z.string().optional().describe("New pipeline name"),
       }),
       outputSchema: sevallaOutputSchema,
       annotations: { openWorldHint: true },
@@ -87,13 +164,185 @@ export function registerPipelineTools(server: McpServer): void {
       if (!clientResult.success) return formatAuthError(clientResult.error);
 
       const body = buildParams({
-        branch: args.branch,
+        name: args.name,
       });
 
       const result = await clientResult.client.request<unknown>({
-        path: `/pipelines/${args.id}/create-preview-app`,
+        path: `/pipelines/${args.id}`,
+        method: "PATCH",
+        body,
+      });
+
+      if (!result.success) return formatError(result.error, "pipeline");
+      return formatSuccess(result.data);
+    }
+  );
+
+  // sevalla.pipelines.delete
+  server.registerTool(
+    "sevalla.pipelines.delete",
+    {
+      title: "Delete Pipeline",
+      description:
+        "Permanently delete a pipeline. This action cannot be undone.",
+      inputSchema: z.object({
+        id: z.uuid().describe("Pipeline UUID"),
+      }),
+      outputSchema: sevallaOutputSchema,
+      annotations: {
+        destructiveHint: true,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
+    },
+    async (args, extra) => {
+      const clientResult = getSevallaClient(extra);
+      if (!clientResult.success) return formatAuthError(clientResult.error);
+
+      const result = await clientResult.client.request<unknown>({
+        path: `/pipelines/${args.id}`,
+        method: "DELETE",
+      });
+
+      if (!result.success) return formatError(result.error, "pipeline");
+      return formatSuccess(result.data);
+    }
+  );
+
+  // sevalla.pipelines.promote
+  server.registerTool(
+    "sevalla.pipelines.promote",
+    {
+      title: "Promote Pipeline",
+      description: "Promote builds between pipeline stages.",
+      inputSchema: z.object({
+        id: z.uuid().describe("Pipeline UUID"),
+      }),
+      outputSchema: sevallaOutputSchema,
+      annotations: { openWorldHint: true },
+    },
+    async (args, extra) => {
+      const clientResult = getSevallaClient(extra);
+      if (!clientResult.success) return formatAuthError(clientResult.error);
+
+      const result = await clientResult.client.request<unknown>({
+        path: `/pipelines/${args.id}/promote`,
+        method: "POST",
+      });
+
+      if (!result.success) return formatError(result.error, "pipeline");
+      return formatSuccess(result.data);
+    }
+  );
+
+  // sevalla.pipelines.stages.create
+  server.registerTool(
+    "sevalla.pipelines.stages.create",
+    {
+      title: "Create Pipeline Stage",
+      description: "Create a new stage in a pipeline.",
+      inputSchema: z.object({
+        id: z.uuid().describe("Pipeline UUID"),
+        name: z.string().optional().describe("Stage name"),
+      }),
+      outputSchema: sevallaOutputSchema,
+      annotations: { openWorldHint: true },
+    },
+    async (args, extra) => {
+      const clientResult = getSevallaClient(extra);
+      if (!clientResult.success) return formatAuthError(clientResult.error);
+
+      const body = buildParams({
+        name: args.name,
+      });
+
+      const result = await clientResult.client.request<unknown>({
+        path: `/pipelines/${args.id}/stages`,
         method: "POST",
         body,
+      });
+
+      if (!result.success) return formatError(result.error, "pipeline stage");
+      return formatSuccess(result.data);
+    }
+  );
+
+  // sevalla.pipelines.stages.delete
+  server.registerTool(
+    "sevalla.pipelines.stages.delete",
+    {
+      title: "Delete Pipeline Stage",
+      description: "Delete a stage from a pipeline.",
+      inputSchema: z.object({
+        id: z.uuid().describe("Pipeline UUID"),
+        stage_id: z.uuid().describe("Stage UUID"),
+      }),
+      outputSchema: sevallaOutputSchema,
+      annotations: {
+        destructiveHint: true,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
+    },
+    async (args, extra) => {
+      const clientResult = getSevallaClient(extra);
+      if (!clientResult.success) return formatAuthError(clientResult.error);
+
+      const result = await clientResult.client.request<unknown>({
+        path: `/pipelines/${args.id}/stages/${args.stage_id}`,
+        method: "DELETE",
+      });
+
+      if (!result.success) return formatError(result.error, "pipeline stage");
+      return formatSuccess(result.data);
+    }
+  );
+
+  // sevalla.pipelines.enable-preview
+  server.registerTool(
+    "sevalla.pipelines.enable-preview",
+    {
+      title: "Enable Pipeline Preview",
+      description: "Enable preview environments for a pipeline.",
+      inputSchema: z.object({
+        id: z.uuid().describe("Pipeline UUID"),
+      }),
+      outputSchema: sevallaOutputSchema,
+      annotations: { openWorldHint: true },
+    },
+    async (args, extra) => {
+      const clientResult = getSevallaClient(extra);
+      if (!clientResult.success) return formatAuthError(clientResult.error);
+
+      const result = await clientResult.client.request<unknown>({
+        path: `/pipelines/${args.id}/preview/enable`,
+        method: "POST",
+      });
+
+      if (!result.success) return formatError(result.error, "pipeline");
+      return formatSuccess(result.data);
+    }
+  );
+
+  // sevalla.pipelines.disable-preview
+  server.registerTool(
+    "sevalla.pipelines.disable-preview",
+    {
+      title: "Disable Pipeline Preview",
+      description: "Disable preview environments for a pipeline.",
+      inputSchema: z.object({
+        id: z.uuid().describe("Pipeline UUID"),
+      }),
+      outputSchema: sevallaOutputSchema,
+      annotations: { openWorldHint: true },
+    },
+    async (args, extra) => {
+      const clientResult = getSevallaClient(extra);
+      if (!clientResult.success) return formatAuthError(clientResult.error);
+
+      const result = await clientResult.client.request<unknown>({
+        path: `/pipelines/${args.id}/preview/disable`,
+        method: "POST",
       });
 
       if (!result.success) return formatError(result.error, "pipeline");

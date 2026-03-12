@@ -15,12 +15,12 @@ import {
 } from "./utils.js";
 
 export function registerNetworkingTools(server: McpServer): void {
-  // sevalla.networking.clear-cache
+  // sevalla.networking.purge-cache
   server.registerTool(
-    "sevalla.networking.clear-cache",
+    "sevalla.networking.purge-cache",
     {
-      title: "Clear Application Cache",
-      description: "Clear the cache for an application.",
+      title: "Purge Application Cache",
+      description: "Purge the edge cache for an application.",
       inputSchema: z.object({
         id: z.uuid().describe("Application UUID"),
       }),
@@ -34,7 +34,7 @@ export function registerNetworkingTools(server: McpServer): void {
       if (!clientResult.success) return formatAuthError(clientResult.error);
 
       const result = await clientResult.client.request<unknown>({
-        path: `/applications/${args.id}/clear-cache`,
+        path: `/applications/${args.id}/purge-edge-cache`,
         method: "POST",
       });
 
@@ -99,39 +99,11 @@ export function registerNetworkingTools(server: McpServer): void {
       if (!clientResult.success) return formatAuthError(clientResult.error);
 
       const result = await clientResult.client.request<unknown>({
-        path: `/applications/${args.id}/cdn/toggle-status`,
+        path: `/applications/${args.id}/toggle-cdn`,
         method: "POST",
       });
 
       if (!result.success) return formatError(result.error, "CDN");
-      return formatSuccess(result.data);
-    }
-  );
-
-  // sevalla.networking.toggle-edge-cache
-  server.registerTool(
-    "sevalla.networking.toggle-edge-cache",
-    {
-      title: "Toggle Edge Cache",
-      description: "Enable or disable edge caching for an application.",
-      inputSchema: z.object({
-        id: z.uuid().describe("Application UUID"),
-      }),
-      outputSchema: sevallaOutputSchema,
-      annotations: {
-        openWorldHint: true,
-      },
-    },
-    async (args, extra) => {
-      const clientResult = getSevallaClient(extra);
-      if (!clientResult.success) return formatAuthError(clientResult.error);
-
-      const result = await clientResult.client.request<unknown>({
-        path: `/applications/${args.id}/edge-cache/toggle-status`,
-        method: "POST",
-      });
-
-      if (!result.success) return formatError(result.error, "edge cache");
       return formatSuccess(result.data);
     }
   );

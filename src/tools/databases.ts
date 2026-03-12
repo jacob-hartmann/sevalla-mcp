@@ -184,7 +184,7 @@ export function registerDatabaseTools(server: McpServer): void {
 
       const result = await clientResult.client.request<unknown>({
         path: `/databases/${args.id}`,
-        method: "PUT",
+        method: "PATCH",
         body,
       });
 
@@ -220,6 +220,167 @@ export function registerDatabaseTools(server: McpServer): void {
       });
 
       if (!result.success) return formatError(result.error, "database");
+      return formatSuccess(result.data);
+    }
+  );
+
+  // sevalla.databases.activate
+  server.registerTool(
+    "sevalla.databases.activate",
+    {
+      title: "Activate Database",
+      description: "Activate a suspended database.",
+      inputSchema: z.object({
+        id: z.uuid().describe("Database UUID"),
+      }),
+      outputSchema: sevallaOutputSchema,
+      annotations: { openWorldHint: true },
+    },
+    async (args, extra) => {
+      const clientResult = getSevallaClient(extra);
+      if (!clientResult.success) return formatAuthError(clientResult.error);
+
+      const result = await clientResult.client.request<unknown>({
+        path: `/databases/${args.id}/activate`,
+        method: "POST",
+      });
+
+      if (!result.success) return formatError(result.error, "database");
+      return formatSuccess(result.data);
+    }
+  );
+
+  // sevalla.databases.suspend
+  server.registerTool(
+    "sevalla.databases.suspend",
+    {
+      title: "Suspend Database",
+      description: "Suspend a running database.",
+      inputSchema: z.object({
+        id: z.uuid().describe("Database UUID"),
+      }),
+      outputSchema: sevallaOutputSchema,
+      annotations: { openWorldHint: true },
+    },
+    async (args, extra) => {
+      const clientResult = getSevallaClient(extra);
+      if (!clientResult.success) return formatAuthError(clientResult.error);
+
+      const result = await clientResult.client.request<unknown>({
+        path: `/databases/${args.id}/suspend`,
+        method: "POST",
+      });
+
+      if (!result.success) return formatError(result.error, "database");
+      return formatSuccess(result.data);
+    }
+  );
+
+  // sevalla.databases.reset-password
+  server.registerTool(
+    "sevalla.databases.reset-password",
+    {
+      title: "Reset Database Password",
+      description: "Reset the password for a database.",
+      inputSchema: z.object({
+        id: z.uuid().describe("Database UUID"),
+      }),
+      outputSchema: sevallaOutputSchema,
+      annotations: { openWorldHint: true },
+    },
+    async (args, extra) => {
+      const clientResult = getSevallaClient(extra);
+      if (!clientResult.success) return formatAuthError(clientResult.error);
+
+      const result = await clientResult.client.request<unknown>({
+        path: `/databases/${args.id}/reset-password`,
+        method: "POST",
+      });
+
+      if (!result.success) return formatError(result.error, "database");
+      return formatSuccess(result.data);
+    }
+  );
+
+  // sevalla.databases.backups.list
+  server.registerTool(
+    "sevalla.databases.backups.list",
+    {
+      title: "List Database Backups",
+      description: "List all backups for a database.",
+      inputSchema: z.object({
+        id: z.uuid().describe("Database UUID"),
+      }),
+      outputSchema: sevallaOutputSchema,
+      annotations: {
+        readOnlyHint: true,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
+    },
+    async (args, extra) => {
+      const clientResult = getSevallaClient(extra);
+      if (!clientResult.success) return formatAuthError(clientResult.error);
+
+      const result = await clientResult.client.request<unknown>({
+        path: `/databases/${args.id}/backups`,
+        method: "GET",
+      });
+
+      if (!result.success) return formatError(result.error, "database backup");
+      return formatSuccess(result.data);
+    }
+  );
+
+  // sevalla.databases.backups.create
+  server.registerTool(
+    "sevalla.databases.backups.create",
+    {
+      title: "Create Database Backup",
+      description: "Create a new backup for a database.",
+      inputSchema: z.object({
+        id: z.uuid().describe("Database UUID"),
+      }),
+      outputSchema: sevallaOutputSchema,
+      annotations: { openWorldHint: true },
+    },
+    async (args, extra) => {
+      const clientResult = getSevallaClient(extra);
+      if (!clientResult.success) return formatAuthError(clientResult.error);
+
+      const result = await clientResult.client.request<unknown>({
+        path: `/databases/${args.id}/backups`,
+        method: "POST",
+      });
+
+      if (!result.success) return formatError(result.error, "database backup");
+      return formatSuccess(result.data);
+    }
+  );
+
+  // sevalla.databases.backups.restore
+  server.registerTool(
+    "sevalla.databases.backups.restore",
+    {
+      title: "Restore Database Backup",
+      description: "Restore a database from a backup.",
+      inputSchema: z.object({
+        id: z.uuid().describe("Database UUID"),
+        backup_id: z.uuid().describe("Backup UUID to restore"),
+      }),
+      outputSchema: sevallaOutputSchema,
+      annotations: { openWorldHint: true },
+    },
+    async (args, extra) => {
+      const clientResult = getSevallaClient(extra);
+      if (!clientResult.success) return formatAuthError(clientResult.error);
+
+      const result = await clientResult.client.request<unknown>({
+        path: `/databases/${args.id}/backups/${args.backup_id}/restore`,
+        method: "POST",
+      });
+
+      if (!result.success) return formatError(result.error, "database backup");
       return formatSuccess(result.data);
     }
   );

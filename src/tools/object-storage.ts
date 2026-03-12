@@ -1,7 +1,7 @@
 /**
- * Sevalla Application Tools
+ * Sevalla Object Storage Tools
  *
- * Tools for managing Sevalla applications.
+ * Tools for managing Sevalla object storage buckets, CDN, and objects.
  */
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -16,13 +16,13 @@ import {
   sevallaOutputSchema,
 } from "./utils.js";
 
-export function registerApplicationTools(server: McpServer): void {
-  // sevalla.applications.list
+export function registerObjectStorageTools(server: McpServer): void {
+  // sevalla.object-storage.list
   server.registerTool(
-    "sevalla.applications.list",
+    "sevalla.object-storage.list",
     {
-      title: "List Applications",
-      description: "List all applications for a company.",
+      title: "List Object Storages",
+      description: "List all object storages for a company.",
       inputSchema: z.object({
         company: z
           .uuid()
@@ -52,6 +52,11 @@ export function registerApplicationTools(server: McpServer): void {
       if (!clientResult.success) return formatAuthError(clientResult.error);
 
       const companyId = args.company ?? getCompanyId();
+      if (!companyId) {
+        return formatAuthError(
+          "No company ID provided. Pass 'company' or set SEVALLA_COMPANY_ID."
+        );
+      }
       const params = buildParams({
         company: companyId,
         limit: args.limit?.toString(),
@@ -59,24 +64,24 @@ export function registerApplicationTools(server: McpServer): void {
       });
 
       const result = await clientResult.client.request<unknown>({
-        path: "/applications",
+        path: "/object-storages",
         method: "GET",
         params: params as Record<string, string>,
       });
 
-      if (!result.success) return formatError(result.error, "application");
+      if (!result.success) return formatError(result.error, "object storage");
       return formatSuccess(result.data);
     }
   );
 
-  // sevalla.applications.get
+  // sevalla.object-storage.get
   server.registerTool(
-    "sevalla.applications.get",
+    "sevalla.object-storage.get",
     {
-      title: "Get Application",
-      description: "Get details of a specific application.",
+      title: "Get Object Storage",
+      description: "Get details of a specific object storage.",
       inputSchema: z.object({
-        id: z.uuid().describe("Application UUID"),
+        id: z.uuid().describe("Object storage UUID"),
       }),
       outputSchema: sevallaOutputSchema,
       annotations: {
@@ -90,33 +95,29 @@ export function registerApplicationTools(server: McpServer): void {
       if (!clientResult.success) return formatAuthError(clientResult.error);
 
       const result = await clientResult.client.request<unknown>({
-        path: `/applications/${args.id}`,
+        path: `/object-storages/${args.id}`,
         method: "GET",
       });
 
-      if (!result.success) return formatError(result.error, "application");
+      if (!result.success) return formatError(result.error, "object storage");
       return formatSuccess(result.data);
     }
   );
 
-  // sevalla.applications.create
+  // sevalla.object-storage.create
   server.registerTool(
-    "sevalla.applications.create",
+    "sevalla.object-storage.create",
     {
-      title: "Create Application",
-      description: "Create a new application.",
+      title: "Create Object Storage",
+      description: "Create a new object storage.",
       inputSchema: z.object({
         company: z
           .uuid()
           .optional()
           .describe("Company UUID (defaults to SEVALLA_COMPANY_ID env var)"),
-        display_name: z.string().describe("Display name for the application"),
-        repository: z.string().describe("Git repository URL"),
-        branch: z.string().describe("Git branch to deploy"),
-        build_type: z
-          .enum(["nixpacks", "buildpacks", "dockerfile"])
-          .optional()
-          .describe("Build type"),
+        display_name: z
+          .string()
+          .describe("Display name for the object storage"),
         location: z
           .string()
           .optional()
@@ -138,44 +139,32 @@ export function registerApplicationTools(server: McpServer): void {
       const body = buildParams({
         company: companyId,
         display_name: args.display_name,
-        repository: args.repository,
-        branch: args.branch,
-        build_type: args.build_type,
         location: args.location,
       });
 
       const result = await clientResult.client.request<unknown>({
-        path: "/applications",
+        path: "/object-storages",
         method: "POST",
         body,
       });
 
-      if (!result.success) return formatError(result.error, "application");
+      if (!result.success) return formatError(result.error, "object storage");
       return formatSuccess(result.data);
     }
   );
 
-  // sevalla.applications.update
+  // sevalla.object-storage.update
   server.registerTool(
-    "sevalla.applications.update",
+    "sevalla.object-storage.update",
     {
-      title: "Update Application",
-      description: "Update an existing application's configuration.",
+      title: "Update Object Storage",
+      description: "Update an existing object storage's configuration.",
       inputSchema: z.object({
-        id: z.uuid().describe("Application UUID"),
-        display_name: z
-          .string()
-          .optional()
-          .describe("New display name for the application"),
-        note: z
-          .string()
-          .optional()
-          .describe("Note or description for the application"),
+        id: z.uuid().describe("Object storage UUID"),
+        display_name: z.string().optional().describe("New display name"),
       }),
       outputSchema: sevallaOutputSchema,
-      annotations: {
-        openWorldHint: true,
-      },
+      annotations: { openWorldHint: true },
     },
     async (args, extra) => {
       const clientResult = getSevallaClient(extra);
@@ -183,29 +172,28 @@ export function registerApplicationTools(server: McpServer): void {
 
       const body = buildParams({
         display_name: args.display_name,
-        note: args.note,
       });
 
       const result = await clientResult.client.request<unknown>({
-        path: `/applications/${args.id}`,
+        path: `/object-storages/${args.id}`,
         method: "PATCH",
         body,
       });
 
-      if (!result.success) return formatError(result.error, "application");
+      if (!result.success) return formatError(result.error, "object storage");
       return formatSuccess(result.data);
     }
   );
 
-  // sevalla.applications.delete
+  // sevalla.object-storage.delete
   server.registerTool(
-    "sevalla.applications.delete",
+    "sevalla.object-storage.delete",
     {
-      title: "Delete Application",
+      title: "Delete Object Storage",
       description:
-        "Permanently delete an application. This action cannot be undone.",
+        "Permanently delete an object storage. This action cannot be undone.",
       inputSchema: z.object({
-        id: z.uuid().describe("Application UUID"),
+        id: z.uuid().describe("Object storage UUID"),
       }),
       outputSchema: sevallaOutputSchema,
       annotations: {
@@ -219,23 +207,23 @@ export function registerApplicationTools(server: McpServer): void {
       if (!clientResult.success) return formatAuthError(clientResult.error);
 
       const result = await clientResult.client.request<unknown>({
-        path: `/applications/${args.id}`,
+        path: `/object-storages/${args.id}`,
         method: "DELETE",
       });
 
-      if (!result.success) return formatError(result.error, "application");
+      if (!result.success) return formatError(result.error, "object storage");
       return formatSuccess(result.data);
     }
   );
 
-  // sevalla.applications.activate
+  // sevalla.object-storage.cdn.enable
   server.registerTool(
-    "sevalla.applications.activate",
+    "sevalla.object-storage.cdn.enable",
     {
-      title: "Activate Application",
-      description: "Activate a suspended application.",
+      title: "Enable Object Storage CDN",
+      description: "Enable CDN for an object storage.",
       inputSchema: z.object({
-        id: z.uuid().describe("Application UUID"),
+        id: z.uuid().describe("Object storage UUID"),
       }),
       outputSchema: sevallaOutputSchema,
       annotations: { openWorldHint: true },
@@ -245,23 +233,23 @@ export function registerApplicationTools(server: McpServer): void {
       if (!clientResult.success) return formatAuthError(clientResult.error);
 
       const result = await clientResult.client.request<unknown>({
-        path: `/applications/${args.id}/activate`,
+        path: `/object-storages/${args.id}/cdn/enable`,
         method: "POST",
       });
 
-      if (!result.success) return formatError(result.error, "application");
+      if (!result.success) return formatError(result.error, "object storage");
       return formatSuccess(result.data);
     }
   );
 
-  // sevalla.applications.suspend
+  // sevalla.object-storage.cdn.disable
   server.registerTool(
-    "sevalla.applications.suspend",
+    "sevalla.object-storage.cdn.disable",
     {
-      title: "Suspend Application",
-      description: "Suspend a running application.",
+      title: "Disable Object Storage CDN",
+      description: "Disable CDN for an object storage.",
       inputSchema: z.object({
-        id: z.uuid().describe("Application UUID"),
+        id: z.uuid().describe("Object storage UUID"),
       }),
       outputSchema: sevallaOutputSchema,
       annotations: { openWorldHint: true },
@@ -271,37 +259,75 @@ export function registerApplicationTools(server: McpServer): void {
       if (!clientResult.success) return formatAuthError(clientResult.error);
 
       const result = await clientResult.client.request<unknown>({
-        path: `/applications/${args.id}/suspend`,
+        path: `/object-storages/${args.id}/cdn/disable`,
         method: "POST",
       });
 
-      if (!result.success) return formatError(result.error, "application");
+      if (!result.success) return formatError(result.error, "object storage");
       return formatSuccess(result.data);
     }
   );
 
-  // sevalla.applications.clone
+  // sevalla.object-storage.objects.list
   server.registerTool(
-    "sevalla.applications.clone",
+    "sevalla.object-storage.objects.list",
     {
-      title: "Clone Application",
-      description: "Clone an existing application.",
+      title: "List Object Storage Objects",
+      description: "List all objects in an object storage.",
       inputSchema: z.object({
-        id: z.uuid().describe("Application UUID to clone"),
+        id: z.uuid().describe("Object storage UUID"),
       }),
       outputSchema: sevallaOutputSchema,
-      annotations: { openWorldHint: true },
+      annotations: {
+        readOnlyHint: true,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
     },
     async (args, extra) => {
       const clientResult = getSevallaClient(extra);
       if (!clientResult.success) return formatAuthError(clientResult.error);
 
       const result = await clientResult.client.request<unknown>({
-        path: `/applications/${args.id}/clone`,
-        method: "POST",
+        path: `/object-storages/${args.id}/objects`,
+        method: "GET",
       });
 
-      if (!result.success) return formatError(result.error, "application");
+      if (!result.success)
+        return formatError(result.error, "object storage object");
+      return formatSuccess(result.data);
+    }
+  );
+
+  // sevalla.object-storage.objects.delete
+  server.registerTool(
+    "sevalla.object-storage.objects.delete",
+    {
+      title: "Delete Object Storage Objects",
+      description:
+        "Delete objects from an object storage by their keys. This action cannot be undone.",
+      inputSchema: z.object({
+        id: z.uuid().describe("Object storage UUID"),
+        keys: z.array(z.string()).describe("Array of object keys to delete"),
+      }),
+      outputSchema: sevallaOutputSchema,
+      annotations: {
+        destructiveHint: true,
+        openWorldHint: true,
+      },
+    },
+    async (args, extra) => {
+      const clientResult = getSevallaClient(extra);
+      if (!clientResult.success) return formatAuthError(clientResult.error);
+
+      const result = await clientResult.client.request<unknown>({
+        path: `/object-storages/${args.id}/objects`,
+        method: "DELETE",
+        body: { keys: args.keys },
+      });
+
+      if (!result.success)
+        return formatError(result.error, "object storage object");
       return formatSuccess(result.data);
     }
   );

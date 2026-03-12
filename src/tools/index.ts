@@ -14,6 +14,17 @@ import { registerDatabaseTools } from "./databases.js";
 import { registerStaticSiteTools } from "./static-sites.js";
 import { registerPipelineTools } from "./pipelines.js";
 import { registerCompanyTools } from "./company.js";
+import { registerEnvVarTools } from "./env-vars.js";
+import { registerAppDomainTools } from "./app-domains.js";
+import { registerLogsMetricsTools } from "./logs-metrics.js";
+import { registerLoadBalancerTools } from "./load-balancers.js";
+import { registerObjectStorageTools } from "./object-storage.js";
+import { registerWebhookTools } from "./webhooks.js";
+import { registerProjectTools } from "./projects.js";
+import { registerDockerRegistryTools } from "./docker-registries.js";
+import { registerGlobalEnvVarTools } from "./global-env-vars.js";
+import { registerApiKeyTools } from "./api-keys.js";
+import { registerResourceTools } from "./resources.js";
 
 export function registerTools(server: McpServer): void {
   registerValidateTool(server);
@@ -25,4 +36,15 @@ export function registerTools(server: McpServer): void {
   registerStaticSiteTools(server);
   registerPipelineTools(server);
   registerCompanyTools(server);
+  registerEnvVarTools(server);
+  registerAppDomainTools(server);
+  registerLogsMetricsTools(server);
+  registerLoadBalancerTools(server);
+  registerObjectStorageTools(server);
+  registerWebhookTools(server);
+  registerProjectTools(server);
+  registerDockerRegistryTools(server);
+  registerGlobalEnvVarTools(server);
+  registerApiKeyTools(server);
+  registerResourceTools(server);
 }
