@@ -15,6 +15,18 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Security
 
+## [1.0.0] - 2026-03-12
+
+### Added
+
+- Migrated to Sevalla API v3 with expanded tool coverage
+
+### Fixed
+
+- Added missing company ID validation to all company-scoped tools
+- Fixed minimatch override to resolve ReDoS vulnerabilities (CVE)
+- Achieved 100% test coverage and fixed vulnerable dependencies
+
 ## [0.1.0] - 2026-02-22
 
 ### Added
