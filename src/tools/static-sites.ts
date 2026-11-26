@@ -66,7 +66,7 @@ export function registerStaticSiteTools(server: McpServer): void {
       const result = await clientResult.client.request<unknown>({
         path: "/static-sites",
         method: "GET",
-        params: params as Record<string, string>,
+        params: params,
       });
 
       if (!result.success) return formatError(result.error, "static site");

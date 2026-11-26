@@ -53,7 +53,7 @@ export function registerGlobalEnvVarTools(server: McpServer): void {
       const result = await clientResult.client.request<unknown>({
         path: "/global-environment-variables",
         method: "GET",
-        params: params as Record<string, string>,
+        params: params,
       });
 
       if (!result.success)

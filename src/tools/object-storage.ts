@@ -66,7 +66,7 @@ export function registerObjectStorageTools(server: McpServer): void {
       const result = await clientResult.client.request<unknown>({
         path: "/object-storages",
         method: "GET",
-        params: params as Record<string, string>,
+        params: params,
       });
 
       if (!result.success) return formatError(result.error, "object storage");

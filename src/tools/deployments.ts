@@ -55,7 +55,7 @@ export function registerDeploymentTools(server: McpServer): void {
       const result = await clientResult.client.request<unknown>({
         path: `/applications/${args.app_id}/deployments`,
         method: "GET",
-        params: params as Record<string, string>,
+        params: params,
       });
 
       if (!result.success) return formatError(result.error, "deployment");
