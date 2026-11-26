@@ -53,7 +53,7 @@ export function registerApiKeyTools(server: McpServer): void {
       const result = await clientResult.client.request<unknown>({
         path: "/api-keys",
         method: "GET",
-        params: params as Record<string, string>,
+        params: params,
       });
 
       if (!result.success) return formatError(result.error, "API key");

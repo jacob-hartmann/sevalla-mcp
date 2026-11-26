@@ -19,8 +19,7 @@ import { loadSevallaConfig, SevallaAuthError } from "./auth.js";
  * Result type for getSevallaClient - allows callers to handle errors gracefully
  */
 export type SevallaClientResult =
-  | { success: true; client: SevallaClient }
-  | { success: false; error: string };
+  { success: true; client: SevallaClient } | { success: false; error: string };
 
 // ---------------------------------------------------------------------------
 // Client Cache

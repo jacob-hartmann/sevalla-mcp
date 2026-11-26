@@ -61,7 +61,7 @@ export function registerDatabaseTools(server: McpServer): void {
       const result = await clientResult.client.request<unknown>({
         path: "/databases",
         method: "GET",
-        params: params as Record<string, string>,
+        params: params,
       });
 
       if (!result.success) return formatError(result.error, "database");

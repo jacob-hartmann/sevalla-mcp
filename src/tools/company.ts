@@ -53,7 +53,7 @@ export function registerCompanyTools(server: McpServer): void {
       const result = await clientResult.client.request<unknown>({
         path: "/users",
         method: "GET",
-        params: params as Record<string, string>,
+        params: params,
       });
 
       if (!result.success) return formatError(result.error, "company");

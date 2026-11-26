@@ -49,7 +49,7 @@ export function registerLogsMetricsTools(server: McpServer): void {
       const result = await clientResult.client.request<unknown>({
         path: `/applications/${args.app_id}/access-logs`,
         method: "GET",
-        params: params as Record<string, string>,
+        params: params,
       });
 
       if (!result.success) return formatError(result.error, "access logs");
@@ -90,7 +90,7 @@ export function registerLogsMetricsTools(server: McpServer): void {
       const result = await clientResult.client.request<unknown>({
         path: `/applications/${args.app_id}/runtime-logs`,
         method: "GET",
-        params: params as Record<string, string>,
+        params: params,
       });
 
       if (!result.success) return formatError(result.error, "runtime logs");
@@ -131,7 +131,7 @@ export function registerLogsMetricsTools(server: McpServer): void {
       const result = await clientResult.client.request<unknown>({
         path: `/applications/${args.app_id}/deployment-logs`,
         method: "GET",
-        params: params as Record<string, string>,
+        params: params,
       });
 
       if (!result.success) return formatError(result.error, "deployment logs");
